@@ -44,6 +44,9 @@ int compare_unicode_string(char* buffer, int offset, long* compare_to) {
     if (buffer_character < compare_to_character)
       return -1;
   }
+  // In case we run out of buffer
+  if (buffer_character == 0)
+    return -1;
   return 0;
 }
 
