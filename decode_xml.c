@@ -1,20 +1,64 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+// A union here gives an easy way to convert
+// from the byte form input buffer to the 32-
+// bit Unicode symbol form.
+
 union unicode_character {
   unsigned char character[4];
   long unicode;
 };
 
+// The Unicode version of <?
+//
+// In XML that's the start of a processing instruction
+//
+// The 0 is a sign to stop this string
+long pi_start[3] = {0x003c, 0x003f, 0x0};
+// The Unicode version of ?>
+long pi_stop[3] = {0x003f, 0x003e, 0x0};
+
+long read_unicode_character(char* buffer, int offset) {
+  union unicode_character character;
+  character.character[0] = buffer[offset];
+  character.character[1] = buffer[offset+1];
+  character.character[2] = buffer[offset+2];
+  character.character[3] = buffer[offset+3];
+  return character.unicode;
+}
+
+int compare_unicode_string(char* buffer, int offset, long* compare_to) {
+  int index = 0;
+  long buffer_character = read_unicode_character(buffer, offset);
+  long compare_to_character = compare_to[0];
+  while (buffer_character != 0 && compare_to_character != 0) {
+    if (buffer_character == compare_to_character) {
+      index++;
+      buffer_character = read_unicode_character(buffer, offset+(index*4));
+      compare_to_character = compare_to[index];
+      continue;
+    }
+    if (buffer_character > compare_to_character)
+      return 1;
+    if (buffer_character < compare_to_character)
+      return -1;
+  }
+  return 0;
+}
+
 int validate_unicode_xml_1(char* buffer, int length) {
+  // Validates an XML buffer as if it had been read from
+  // the filesystem, with a 4 byte BOM at the beginning
   union unicode_character character;
   character.unicode = (long) 0;
   int counter = 4;
   for (; counter < length; counter += 4) {
-    character.character[0] = buffer[0];
-    character.character[1] = buffer[1];
-    character.character[2] = buffer[2];
-    character.character[3] = buffer[3];
+    character.unicode = read_unicode_character(buffer, counter);
+    //    character.character[0] = buffer[0];
+    //    character.character[1] = buffer[1];
+    //    character.character[2] = buffer[2];
+    //    character.character[3] = buffer[3];
 
     if (character.unicode == (long) 0x0009 ||
 	character.unicode == (long) 0x000A ||
@@ -65,7 +109,9 @@ int main() {
     }
     int result = 0;
     result = validate_unicode_xml_1(buffer, read);
-    printf("Result: %i", result);
+    printf("Unicode validation: %i\n", result);
+    result = compare_unicode_string(buffer, 4, pi_start);
+    printf("Starts with XML processing instruction: %i\n", !result);
   } else {
     printf("BOM not found, %x\n", buffer[0]);
     exit(1);
