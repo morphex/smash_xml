@@ -75,7 +75,7 @@ int compare_unicode_character_array(char* buffer, int offset, long* compare_to) 
 }
 
 // This function is necessary, because using compare_unicode_character_array
-// doesn't work, bytes a prepended to read_unicode_char in it.
+// doesn't work, bytes are prepended to read_unicode_char in it.
 int compare_character_character_array(long character, long* compare_to) {
   int index = 0;
   long current_comparison;
