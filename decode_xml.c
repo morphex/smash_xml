@@ -18,6 +18,9 @@ union unicode_character {
 long pi_start[3] = {0x003c, 0x003f, 0x0};
 // The Unicode version of ?>
 long pi_stop[3] = {0x003f, 0x003e, 0x0};
+// The variants of whitespace that are accepted as
+// spacers between attributes in element tags for example.
+long whitespace[5] = {0x0020, 0x0009, 0x000D, 0x000A, 0x0};
 
 long read_unicode_character(char* buffer, int offset) {
   union unicode_character character;
@@ -26,6 +29,53 @@ long read_unicode_character(char* buffer, int offset) {
   character.character[2] = buffer[offset+2];
   character.character[3] = buffer[offset+3];
   return character.unicode;
+}
+
+int compare_unicode_character(char* buffer, int offset, long compare_to) {
+  long character = read_unicode_character(buffer, offset);
+  if (character == compare_to)
+    return 0;
+  if (character > compare_to)
+    return 1;
+  if (character < compare_to)
+    return -1;
+}
+
+int compare_unicode_character_array(char* buffer, int offset, long* compare_to) {
+  int index = 0;
+  long character = read_unicode_character(buffer, offset);
+  long current_comparison = 0;
+  while (current_comparison = compare_to[index]) {
+    if (character == current_comparison) {
+      // A return value of 0 or more means success.
+      return index;
+    } else {
+      index++;
+      character = read_unicode_character(buffer, offset+(index*4));
+    }
+  }
+  // Nothing found, return -1
+  return -1;
+}
+
+// Function that runs through buffer looking for whitespace
+// characters.  When a non-whitespace character is found,
+// returns the position.
+long run_whitespace(char* buffer, int offset) {
+  int index = 0;
+  long character = 0;
+  do {
+    character = read_unicode_character(buffer, offset+(index*4));
+    if (character == 0) {
+      return index - 4;
+    }
+    if (compare_unicode_character_array(buffer, offset+(index*4), whitespace) > -1) {
+      index++;
+      continue;
+    } else {
+      return offset + (index*4);
+    }
+  } while (1);
 }
 
 int compare_unicode_string(char* buffer, int offset, long* compare_to) {
@@ -39,8 +89,13 @@ int compare_unicode_string(char* buffer, int offset, long* compare_to) {
       compare_to_character = compare_to[index];
       continue;
     }
-    if (buffer_character > compare_to_character)
+    if (buffer_character > compare_to_character) {
+      /*
+      printf("index: %i\n", index);
+      printf("buffer_character %lu - compare_to_character %lu", buffer_character, compare_to_character);
+      */
       return 1;
+    }
     if (buffer_character < compare_to_character)
       return -1;
   }
@@ -113,8 +168,11 @@ int main() {
     int result = 0;
     result = validate_unicode_xml_1(buffer, read);
     printf("Unicode validation: %i\n", result);
-    result = compare_unicode_string(buffer, 4, pi_start);
-    printf("Starts with XML processing instruction: %i\n", !result);
+    result = compare_unicode_string(buffer, sizeof(char)*4, pi_start);
+    printf("Starts with XML processing instruction: %i\n", result);
+    result = run_whitespace(buffer, sizeof(char)*3*4);
+    printf("First non-whitespace after pi_start: %i\n", result);
+    printf("Character %lu\n", read_unicode_character(buffer, result));
   } else {
     printf("BOM not found, %x\n", buffer[0]);
     exit(1);
