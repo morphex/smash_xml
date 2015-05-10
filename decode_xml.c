@@ -67,7 +67,7 @@ long run_whitespace(char* buffer, int offset) {
   do {
     character = read_unicode_character(buffer, offset+(index*4));
     if (character == 0) {
-      return index - 4;
+      return offset + ((index*4) - 4);
     }
     if (compare_unicode_character_array(buffer, offset+(index*4), whitespace) > -1) {
       index++;
