@@ -7,7 +7,7 @@
 
 union unicode_character {
   unsigned char character[4];
-  long unicode;
+  unsigned long unicode;
 };
 
 // The Unicode version of <?
@@ -29,6 +29,7 @@ long xml_whitespace[] = {0x0020, 0x0009, 0x000D, 0x000A, 0x0};
 
 long read_unicode_character(char* buffer, int offset) {
   union unicode_character character;
+  character.unicode = 0;
   character.character[0] = buffer[offset+0];
   character.character[1] = buffer[offset+1];
   character.character[2] = buffer[offset+2];
@@ -49,10 +50,7 @@ int compare_unicode_character(char* buffer, int offset, long compare_to) {
 
 int compare_unicode_character_array(char* buffer, int offset, long* compare_to) {
   int index = 0;
-  // long character = read_unicode_character(buffer, offset);
-  // The above doesn't work, a somewhat random byte is prepended FIXME
-  long character = 0;
-  character = read_unicode_character(buffer, offset);
+  long character = read_unicode_character(buffer, offset);
   long current_comparison;
   while (1) {
     current_comparison = compare_to[index];
@@ -67,16 +65,15 @@ int compare_unicode_character_array(char* buffer, int offset, long* compare_to) 
     } else {
       printf("miss compare_unicode_character_array: %lx - %lx\n", character, current_comparison);
       index++;
-      //character = read_unicode_character(buffer, offset+(index*4));
+      character = read_unicode_character(buffer, offset+(index*4));
     }
   }
   // Nothing found, return -1
   return -1;
 }
 
-// This function is necessary, because using compare_unicode_character_array
-// doesn't work, bytes are prepended to read_unicode_char in it.
-int compare_character_character_array(long character, long* compare_to) {
+// Doesn't look like this function is necessary anymore. FIXME
+int disabled___compare_character_character_array(long character, long* compare_to) {
   int index = 0;
   long current_comparison;
   while (1) {
@@ -113,7 +110,7 @@ long run_whitespace(char* buffer, int offset) {
     if (character == 0) {
       return offset + ((index*4) - 4);
     }
-    if (compare_character_character_array(character, xml_whitespace) > -1) {
+    if (compare_unicode_character_array(buffer, offset+(index*4), xml_whitespace) > -1) {
       index++;
       continue;
     } else {
@@ -157,11 +154,6 @@ int validate_unicode_xml_1(char* buffer, int length) {
   int counter = 4;
   for (; counter < length; counter += 4) {
     character.unicode = read_unicode_character(buffer, counter);
-    //    character.character[0] = buffer[0];
-    //    character.character[1] = buffer[1];
-    //    character.character[2] = buffer[2];
-    //    character.character[3] = buffer[3];
-
     if (character.unicode == (long) 0x0009 ||
 	character.unicode == (long) 0x000A ||
 	character.unicode == (long) 0x000D) {
@@ -215,14 +207,15 @@ int main() {
     result = compare_unicode_string(buffer, sizeof(char)*4, pi_start);
     printf("Starts with XML processing instruction: %i\n", result);
     result = compare_unicode_character_array(buffer, sizeof(char)*4*3, xml_pi_x);
-    printf("Found X or x in buffer: %i\n", result);
+    printf("Found X or x in buffer: %i\n", result > -1);
     result = compare_unicode_character_array(buffer, sizeof(char)*4*4, xml_pi_m);
-    printf("Found M or m in buffer: %i\n", result);
+    printf("Found M or m in buffer: %i\n", result > -1);
     result = compare_unicode_character_array(buffer, sizeof(char)*4*5, xml_pi_l);
-    printf("Found L or l in buffer: %i\n", result);
+    printf("Found L or l in buffer: %i\n", result > -1);
     result = run_whitespace(buffer, sizeof(char)*4*6);
     printf("First non-whitespace after pi_start at position: %i\n", result);
-    printf("Character %c\n", (int) read_unicode_character(buffer, result));
+    long result2 = read_unicode_character(buffer, result);
+    printf("Character %c %x\n", (int) result2, result2);
   } else {
     printf("BOM not found, %x\n", buffer[0]);
     exit(1);
