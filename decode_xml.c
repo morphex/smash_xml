@@ -28,10 +28,10 @@ long xml_pi_l[3] = {0x006c, 0x004c, 0x0};
 long xml_whitespace[] = {0x0020, 0x0009, 0x000D, 0x000A, 0x0};
 // The single characters that can be a at the
 // start of an attribute name: ":" | "_"
-long name_start_character_single_characters[] = {0x003A, 0x005F};
+long name_start_character_single_characters[] = {0x003A, 0x005F, 0x00};
 // The single characters that can be a part of
 // an attribute name: "-" | "." | 0x00B7
-long name_character_single_characters[] = {0x002D, 0x002E, 0x00B7};
+long name_character_single_characters[] = {0x002D, 0x002E, 0x00B7, 0x00};
 
 inline long read_unicode_character(char* buffer, int offset) {
   union unicode_character character;
