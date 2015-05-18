@@ -26,8 +26,14 @@ long xml_pi_l[3] = {0x006c, 0x004c, 0x0};
 // The variants of whitespace that are accepted as
 // spacers between attributes in element tags for example.
 long xml_whitespace[] = {0x0020, 0x0009, 0x000D, 0x000A, 0x0};
+// The single characters that can be a at the
+// start of an attribute name: ":" | "_"
+long name_start_character_single_characters[] = {0x003A, 0x005F};
+// The single characters that can be a part of
+// an attribute name: "-" | "." | 0x00B7
+long name_character_single_characters[] = {0x002D, 0x002E, 0x00B7};
 
-long read_unicode_character(char* buffer, int offset) {
+inline long read_unicode_character(char* buffer, int offset) {
   union unicode_character character;
   character.unicode = 0;
   character.character[0] = buffer[offset+0];
@@ -37,7 +43,7 @@ long read_unicode_character(char* buffer, int offset) {
   return character.unicode;
 }
 
-int compare_unicode_character(char* buffer, int offset, long compare_to) {
+inline int compare_unicode_character(char* buffer, int offset, long compare_to) {
   long character = read_unicode_character(buffer, offset);
   printf("compare_unicode_character: %lu - %lu\n", character, compare_to);
   if (character == compare_to)
@@ -48,7 +54,7 @@ int compare_unicode_character(char* buffer, int offset, long compare_to) {
     return -1;
 }
 
-int compare_unicode_character_array(char* buffer, int offset, long* compare_to) {
+inline int compare_unicode_character_array(char* buffer, int offset, long* compare_to) {
   int index = 0;
   long character = read_unicode_character(buffer, offset);
   long current_comparison;
@@ -101,7 +107,7 @@ int disabled___compare_character_character_array(long character, long* compare_t
 // Function that runs through buffer looking for whitespace
 // characters.  When a non-whitespace character is found,
 // returns the position.
-long run_whitespace(char* buffer, int offset) {
+inline long run_whitespace(char* buffer, int offset) {
   int index = 0;
   long character = 0;
   do {
@@ -119,7 +125,7 @@ long run_whitespace(char* buffer, int offset) {
   } while (1);
 }
 
-int compare_unicode_string(char* buffer, int offset, long* compare_to) {
+inline int compare_unicode_string(char* buffer, int offset, long* compare_to) {
   int index = 0;
   long buffer_character = read_unicode_character(buffer, offset);
   long compare_to_character = compare_to[0];
@@ -178,6 +184,45 @@ int validate_unicode_xml_1(char* buffer, int length) {
   return 0;
 }
 
+inline int is_name_start_character(char* buffer, int offset) {
+  if (compare_unicode_character_array(buffer, offset,
+				      name_start_character_single_characters))
+    return 1;
+  long character = read_unicode_character(buffer, offset);
+  if ((character >= (long)0x0061 && character <= (long)0x007A) || // [a-z]
+      (character >= (long)0x0041 && character <= (long)0x005A) || // [A-Z]
+      (character >= (long)0x00C0 && character <= (long)0x00D6) || // [#xC0-#xD6]
+      (character >= (long)0x00D8 && character <= (long)0x00F6) || // [#xD8-#xF6]
+      (character >= (long)0x00F8 && character <= (long)0x02FF) || // [#xF8-#x2FF]
+      (character >= (long)0x0370 && character <= (long)0x037D) || // [x370-#x37D]
+      (character >= (long)0x037F && character <= (long)0x1FFF) || // [#x37F-#x1FFF]
+      (character >= (long)0x200C && character <= (long)0x200D) || // [#x200C-#x200D]
+      (character >= (long)0x2070 && character <= (long)0x218F) || // [#x2070-#x218F]
+      (character >= (long)0x2C00 && character <= (long)0x2FEF) || // [#x2C00-#x2FEF]
+      (character >= (long)0x3001 && character <= (long)0xD7FF) || // [#x3001-#xD7FF]
+      (character >= (long)0xF900 && character <= (long)0xFDCF) || // [#xF900-#xFDCF]
+      (character >= (long)0xFDF0 && character <= (long)0xFFFD) || // [#xFDF0-#xFFFD]
+      (character >= (long)0x10000 && character <= (long)0xEFFFF)) { // [#x10000-#xEFFFF
+    return 1;
+  }
+  return 0;
+}
+
+inline int is_name_character(char* buffer, int offset) {
+  if (is_name_start_character(buffer, offset))
+    return 1;
+  if (compare_unicode_character_array(buffer, offset,
+				      name_character_single_characters))
+    return 1;
+  long character = read_unicode_character(buffer, offset);
+  if ((character >= (long)0x0030 && character <= (long)0x0039) || // [0-9]
+      (character >= (long)0x0300 && character <= (long)0x036F) || // [#x300-#x36F]
+      (character >= (long)0x203F && character <= (long)0x2040)) { // [#x203F-#x2040]
+    return 1;
+  }
+  return 0;
+}
+      
 int main() {
   char *buffer = NULL;
   int read = 0;
@@ -185,6 +230,7 @@ int main() {
   FILE *file = NULL;
   file = fopen("test.xml.2", "rb+");
   read = fread(buffer, sizeof(char), 1024, file);
+  buffer[read+1] = 0x00;
   if (read < 4) {
     // Not enough data to process
     printf("File not large enough, only %i bytes\n", read);
@@ -216,6 +262,12 @@ int main() {
     printf("First non-whitespace after pi_start at position: %i\n", result);
     long result2 = read_unicode_character(buffer, result);
     printf("Character %c %x\n", (int) result2, result2);
+    int result3 = is_name_start_character(buffer, result);
+    printf("Character is a name start character: %i\n", result3);
+    int result4 = is_name_start_character(buffer, result+4);
+    printf("Following character is a name character: %i\n", result4);
+    long result5 = read_unicode_character(buffer, result+4);
+    printf("And its the character %c\n", result5);
   } else {
     printf("BOM not found, %x\n", buffer[0]);
     exit(1);
