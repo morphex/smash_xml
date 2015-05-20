@@ -33,7 +33,7 @@ long name_start_character_single_characters[] = {0x003A, 0x005F, 0x00};
 // an attribute name: "-" | "." | 0x00B7
 long name_character_single_characters[] = {0x002D, 0x002E, 0x00B7, 0x00};
 
-inline long read_unicode_character(char* buffer, int offset) {
+inline long read_unicode_character(char* buffer, long offset) {
   union unicode_character character;
   character.unicode = 0;
   character.character[0] = buffer[offset+0];
@@ -43,8 +43,24 @@ inline long read_unicode_character(char* buffer, int offset) {
   return character.unicode;
 }
 
-inline int compare_unicode_character(char* buffer, int offset, long compare_to) {
-  long character = read_unicode_character(buffer, offset);
+inline int is_equal_character(char* buffer, long offset) {
+  return read_unicode_character(buffer, offset) == (long) 0x003D;
+}
+
+// Returns 0 if character is not "'" | '"'
+//
+// Returns long 0x22 for " and 0x27 for '
+inline long is_attribute_value_start(char* buffer, long offset) {
+  unsigned long character = read_unicode_character(buffer, offset);
+  if (character == (long) 0x22 || character == (long) 0x27) {
+    return character;
+  } else {
+    return 0;
+  }
+}
+
+inline int compare_unicode_character(char* buffer, long offset, long compare_to) {
+  unsigned long character = read_unicode_character(buffer, offset);
   printf("compare_unicode_character: %lu - %lu\n", character, compare_to);
   if (character == compare_to)
     return 0;
@@ -54,9 +70,9 @@ inline int compare_unicode_character(char* buffer, int offset, long compare_to) 
     return -1;
 }
 
-inline int compare_unicode_character_array(char* buffer, int offset, long* compare_to) {
+inline int compare_unicode_character_array(char* buffer, long offset, long* compare_to) {
   int index = 0;
-  long character = read_unicode_character(buffer, offset);
+  unsigned long character = read_unicode_character(buffer, offset);
   long current_comparison;
   while (1) {
     current_comparison = compare_to[index];
@@ -107,9 +123,9 @@ int disabled___compare_character_character_array(long character, long* compare_t
 // Function that runs through buffer looking for whitespace
 // characters.  When a non-whitespace character is found,
 // returns the position.
-inline long run_whitespace(char* buffer, int offset) {
+inline long run_whitespace(char* buffer, long offset) {
   int index = 0;
-  long character = 0;
+  unsigned long character = 0;
   do {
     character = read_unicode_character(buffer, offset+(index*4));
     printf("run_whitespace character: %lx\n", character);
@@ -125,10 +141,10 @@ inline long run_whitespace(char* buffer, int offset) {
   } while (1);
 }
 
-inline int compare_unicode_string(char* buffer, int offset, long* compare_to) {
+inline int compare_unicode_string(char* buffer, long offset, long* compare_to) {
   int index = 0;
-  long buffer_character = read_unicode_character(buffer, offset);
-  long compare_to_character = compare_to[0];
+  unsigned long buffer_character = read_unicode_character(buffer, offset);
+  unsigned long compare_to_character = compare_to[0];
   while (buffer_character != 0 && compare_to_character != 0) {
     if (buffer_character == compare_to_character) {
       index++;
@@ -184,11 +200,11 @@ int validate_unicode_xml_1(char* buffer, int length) {
   return 0;
 }
 
-inline int is_name_start_character(char* buffer, int offset) {
+inline int is_name_start_character(char* buffer, long offset) {
   if (compare_unicode_character_array(buffer, offset,
 				      name_start_character_single_characters))
     return 1;
-  long character = read_unicode_character(buffer, offset);
+  unsigned long character = read_unicode_character(buffer, offset);
   if ((character >= (long)0x0061 && character <= (long)0x007A) || // [a-z]
       (character >= (long)0x0041 && character <= (long)0x005A) || // [A-Z]
       (character >= (long)0x00C0 && character <= (long)0x00D6) || // [#xC0-#xD6]
@@ -202,19 +218,19 @@ inline int is_name_start_character(char* buffer, int offset) {
       (character >= (long)0x3001 && character <= (long)0xD7FF) || // [#x3001-#xD7FF]
       (character >= (long)0xF900 && character <= (long)0xFDCF) || // [#xF900-#xFDCF]
       (character >= (long)0xFDF0 && character <= (long)0xFFFD) || // [#xFDF0-#xFFFD]
-      (character >= (long)0x10000 && character <= (long)0xEFFFF)) { // [#x10000-#xEFFFF
+      (character >= (long)0x10000 && character <= (long)0xEFFFF)) { // [#x10000-#xEFFFF]
     return 1;
   }
   return 0;
 }
 
-inline int is_name_character(char* buffer, int offset) {
+inline int is_name_character(char* buffer, long offset) {
   if (is_name_start_character(buffer, offset))
     return 1;
   if (compare_unicode_character_array(buffer, offset,
 				      name_character_single_characters))
     return 1;
-  long character = read_unicode_character(buffer, offset);
+  unsigned long character = read_unicode_character(buffer, offset);
   if ((character >= (long)0x0030 && character <= (long)0x0039) || // [0-9]
       (character >= (long)0x0300 && character <= (long)0x036F) || // [#x300-#x36F]
       (character >= (long)0x203F && character <= (long)0x2040)) { // [#x203F-#x2040]
@@ -268,6 +284,9 @@ int main() {
     printf("Following character is a name character: %i\n", result4);
     long result5 = read_unicode_character(buffer, result+4);
     printf("And its the character %c\n", result5);
+    printf("Character %c\n", (char)read_unicode_character(buffer, result+(4*7)));
+    printf("Is equal character %i\n", (char)is_equal_character(buffer, result+(4*7)));
+    printf("Is attribute value start: 0x%lx\n", is_attribute_value_start(buffer, result+(4*8)));
   } else {
     printf("BOM not found, %x\n", buffer[0]);
     exit(1);
