@@ -59,6 +59,7 @@ inline long is_attribute_value_start(char* buffer, long offset) {
   }
 }
 
+// Returns 0 if strings are similar
 inline int compare_unicode_character(char* buffer, long offset, long compare_to) {
   unsigned long character = read_unicode_character(buffer, offset);
   printf("compare_unicode_character: %lu - %lu\n", character, compare_to);
@@ -120,6 +121,11 @@ int disabled___compare_character_character_array(long character, long* compare_t
   return -1;
 }
 
+// Function that returns true if character at offset is whitespace
+inline long is_whitespace(char* buffer, long offset) {
+  return compare_unicode_character_array(buffer, offset, xml_whitespace) > -1;
+}
+
 // Function that runs through buffer looking for whitespace
 // characters.  When a non-whitespace character is found,
 // returns the position.
@@ -132,7 +138,7 @@ inline long run_whitespace(char* buffer, long offset) {
     if (character == 0) {
       return offset + ((index*4) - 4);
     }
-    if (compare_unicode_character_array(buffer, offset+(index*4), xml_whitespace) > -1) {
+    if (is_whitespace(buffer, offset+(index*4))) {
       index++;
       continue;
     } else {
@@ -141,6 +147,28 @@ inline long run_whitespace(char* buffer, long offset) {
   } while (1);
 }
 
+// Function that runs through an attribute value, looking
+// for the terminating single or double quote.
+//
+// A return value of -1 indicates that no terminating
+// quote was found and that the XML is invalid.
+inline long run_attribute_value(char* buffer, long offset,
+				unsigned long terminating_quote) {
+  int index = 0;
+  unsigned long character = 0;
+  do {
+    character = read_unicode_character(buffer, offset+(index*4));
+    if (character == 0) {
+      return -1;
+    } else if (character == terminating_quote) {
+      return offset + (index*4);
+    } else
+      index++;
+    continue;
+  } while (1);
+}
+
+// Returns 0 if strings are similar
 inline int compare_unicode_string(char* buffer, long offset, long* compare_to) {
   int index = 0;
   unsigned long buffer_character = read_unicode_character(buffer, offset);
@@ -153,10 +181,8 @@ inline int compare_unicode_string(char* buffer, long offset, long* compare_to) {
       continue;
     }
     if (buffer_character > compare_to_character) {
-      /*
       printf("index: %i\n", index);
       printf("buffer_character %lu - compare_to_character %lu", buffer_character, compare_to_character);
-      */
       return 1;
     }
     if (buffer_character < compare_to_character)
@@ -166,6 +192,27 @@ inline int compare_unicode_string(char* buffer, long offset, long* compare_to) {
   if (buffer_character == 0)
     return -1;
   return 0;
+}
+
+// Function that searches for a given unicode string, a
+// return value of >= 0 indicates success
+inline long run_unicode_string(char* buffer, long offset, long* compare_to) {
+  int index = 0;
+  unsigned long character = 0;
+  do {
+    character = read_unicode_character(buffer, offset+(index*4));
+    printf("Search loop: %i %i\n", offset+(index*4), character);
+    if (character == 0) {
+      return -1;
+    } else if (character == compare_to[0]) {
+      printf("\tFound matching character\n");
+      if (!compare_unicode_string(buffer, offset+(index*4), compare_to)) {
+	  return offset + (index*4);
+      }
+    }
+    index++;
+    continue;
+  } while (1);  
 }
 
 int validate_unicode_xml_1(char* buffer, int length) {
@@ -282,13 +329,27 @@ int main() {
     printf("Character is a name start character: %i\n", result3);
     int result4 = is_name_start_character(buffer, result+4);
     printf("Following character is a name character: %i\n", result4);
-    long result5 = read_unicode_character(buffer, result+4);
+    unsigned long result5 = read_unicode_character(buffer, result+4);
     printf("And its the character %c\n", result5);
     printf("Character %c\n", (char)read_unicode_character(buffer, result+(4*7)));
     printf("Is equal character %i\n", (char)is_equal_character(buffer, result+(4*7)));
-    printf("Is attribute value start: 0x%lx\n", is_attribute_value_start(buffer, result+(4*8)));
+    unsigned long quote = is_attribute_value_start(buffer, result+(4*8));
+    printf("Is attribute value start: 0x%lx\n", quote);
+    unsigned long position = run_attribute_value(buffer, result+(4*8),
+						 quote);
+    if (position == -1) { // Invalid XML
+      printf("Invalid XML, no terminating quote found after %lx",
+	     result+(4*8));
+    }
+    printf("Position of terminating quote: %lx\n", position);
+    printf("Value: %c\n", read_unicode_character(buffer, position));
+    unsigned long stop = run_unicode_string(buffer, position, pi_stop);
+    printf("Position of trailing processing instruction: %i\n", stop);
+    printf("And it was %c%c\n", read_unicode_character(buffer, stop),
+	   read_unicode_character(buffer, stop+4));
+	   
   } else {
-    printf("BOM not found, %x\n", buffer[0]);
+    printf("BOM not found, %x\n", read_unicode_character(buffer, 0));
     exit(1);
   }
   printf("%i\n", read);
