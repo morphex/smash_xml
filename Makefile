@@ -1,2 +1,2 @@
 all:
-	gcc decode_xml.c -o decode_xml
+	gcc decode_xml.c -g -o decode_xml

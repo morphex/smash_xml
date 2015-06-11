@@ -1,6 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+// Maximum element or attribute name size is 4 MB
+// or 1M 32 bit characters.
+const long MAXIMUM_NAME_SIZE = 1024*1024;
+const long MAXIMUM_NAME_SIZE_BYTES = 1024*1024*4;
+
 // A union here gives an easy way to convert
 // from the byte form input buffer to the 32-
 // bit Unicode symbol form.
@@ -152,6 +157,8 @@ inline long run_whitespace(char* buffer, long offset) {
 //
 // A return value of -1 indicates that no terminating
 // quote was found and that the XML is invalid.
+//
+// Look for invalid characters FIXME
 inline long run_attribute_value(char* buffer, long offset,
 				unsigned long terminating_quote) {
   int index = 0;
@@ -162,9 +169,9 @@ inline long run_attribute_value(char* buffer, long offset,
       return -1;
     } else if (character == terminating_quote) {
       return offset + (index*4);
-    } else
+    } else {
       index++;
-    continue;
+    }
   } while (1);
 }
 
@@ -249,8 +256,10 @@ int validate_unicode_xml_1(char* buffer, int length) {
 
 inline int is_name_start_character(char* buffer, long offset) {
   if (compare_unicode_character_array(buffer, offset,
-				      name_start_character_single_characters))
+				      name_start_character_single_characters) >= 0) {
+    printf("name_start_character 1\n");
     return 1;
+  }
   unsigned long character = read_unicode_character(buffer, offset);
   if ((character >= (long)0x0061 && character <= (long)0x007A) || // [a-z]
       (character >= (long)0x0041 && character <= (long)0x005A) || // [A-Z]
@@ -272,20 +281,61 @@ inline int is_name_start_character(char* buffer, long offset) {
 }
 
 inline int is_name_character(char* buffer, long offset) {
-  if (is_name_start_character(buffer, offset))
+  if (is_name_start_character(buffer, offset)) {
+    printf("name start 1\n");
     return 1;
+  }
   if (compare_unicode_character_array(buffer, offset,
-				      name_character_single_characters))
+				      name_character_single_characters) >= 0) {
+    printf("name start 2\n");
     return 1;
+  }
   unsigned long character = read_unicode_character(buffer, offset);
   if ((character >= (long)0x0030 && character <= (long)0x0039) || // [0-9]
       (character >= (long)0x0300 && character <= (long)0x036F) || // [#x300-#x36F]
       (character >= (long)0x203F && character <= (long)0x2040)) { // [#x203F-#x2040]
+    printf("name start 3\n");
     return 1;
   }
   return 0;
 }
-      
+
+// Function that parses an attribute name and returns a
+// status value or the size.
+  if (!is_name_start_character(buffer, position)) {
+    return (long)-1;
+  }
+  if (attribute == 0) {
+    return (long)0;
+  }
+  // Could've skipped the first character but adding
+  // it via the loop to keep the code simple.
+  unsigned long index = 0;
+  unsigned long character = 0;
+  printf("In run_attribute_name..\n");
+  do {
+    if (index > (MAXIMUM_NAME_SIZE)) {
+      // Attribute name is too long
+      free(attribute); attribute = NULL;
+      return (long)-2;
+    }
+    character = read_unicode_character(buffer, position+(index*4));
+    if (is_name_character(buffer, position+(index*4))){
+      *(attribute+index) = character;
+      index++;
+      printf("Copied a char..%lx %c %i\n", character, (char)character, index);
+    } else if (!is_equal_character(buffer, position+(index*4))) {
+      // Invalid character found
+      printf("Invalid character found..\n");
+      free(attribute); attribute = NULL;
+      return (long)-3;
+    } else {
+      printf("Success, reallocating memory..\n");
+      return index;
+    }
+  } while (1);
+}
+
 int main() {
   char *buffer = NULL;
   int read = 0;
@@ -327,7 +377,7 @@ int main() {
     printf("Character %c %x\n", (int) result2, result2);
     int result3 = is_name_start_character(buffer, result);
     printf("Character is a name start character: %i\n", result3);
-    int result4 = is_name_start_character(buffer, result+4);
+    int result4 = is_name_character(buffer, result+4);
     printf("Following character is a name character: %i\n", result4);
     unsigned long result5 = read_unicode_character(buffer, result+4);
     printf("And its the character %c\n", result5);
@@ -347,7 +397,13 @@ int main() {
     printf("Position of trailing processing instruction: %i\n", stop);
     printf("And it was %c%c\n", read_unicode_character(buffer, stop),
 	   read_unicode_character(buffer, stop+4));
-	   
+    unsigned long* attribute = NULL;
+    printf("Attribute name, %lx: ", size);
+    /*
+    }
+    */
+    printf("\n");
+    free(attribute); attribute = NULL;
   } else {
     printf("BOM not found, %x\n", read_unicode_character(buffer, 0));
     exit(1);
