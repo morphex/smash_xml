@@ -302,9 +302,11 @@ inline int is_name_character(char* buffer, long offset) {
 
 // Function that parses an attribute name and returns a
 // status value or the size.
+inline long run_attribute_name(char* buffer, unsigned long position, unsigned long *attribute) {
   if (!is_name_start_character(buffer, position)) {
     return (long)-1;
   }
+  attribute = malloc(sizeof(char)*MAXIMUM_NAME_SIZE_BYTES);
   if (attribute == 0) {
     return (long)0;
   }
@@ -331,6 +333,7 @@ inline int is_name_character(char* buffer, long offset) {
       return (long)-3;
     } else {
       printf("Success, reallocating memory..\n");
+      realloc(attribute, sizeof(char)*index*4);
       return index;
     }
   } while (1);
@@ -398,8 +401,12 @@ int main() {
     printf("And it was %c%c\n", read_unicode_character(buffer, stop),
 	   read_unicode_character(buffer, stop+4));
     unsigned long* attribute = NULL;
+    long size = run_attribute_name(buffer, 7*4, attribute);
     printf("Attribute name, %lx: ", size);
+    long index = *(attribute);
     /*
+    for (; index < 1; index++) {
+      printf("%lx", *(attribute+index));
     }
     */
     printf("\n");
