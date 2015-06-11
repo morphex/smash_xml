@@ -306,8 +306,8 @@ inline long run_attribute_name(char* buffer, unsigned long position, unsigned lo
   if (!is_name_start_character(buffer, position)) {
     return (long)-1;
   }
-  *attribute = (unsigned long*)malloc(sizeof(long)*MAXIMUM_NAME_SIZE);
-  if (attribute == 0) {
+  unsigned long *attribute_storage = malloc(sizeof(long)*MAXIMUM_NAME_SIZE);
+  if (attribute_storage == 0) {
     return (long)0;
   }
   // Could've skipped the first character but adding
@@ -318,22 +318,24 @@ inline long run_attribute_name(char* buffer, unsigned long position, unsigned lo
   do {
     if (index > MAXIMUM_NAME_SIZE) {
       // Attribute name is too long
-      free(attribute); attribute = NULL;
+      free(attribute_storage); attribute_storage = NULL;
       return (long)-2;
     }
     character = read_unicode_character(buffer, position+(index*4));
-    if (is_name_character(buffer, position+(index*4))){
-      attribute[index] = (unsigned long)character;
+    if (is_name_character(buffer, position+(index*4))) {
+      printf("Address: %i\n", &attribute[index]);
+      attribute_storage[index] = (unsigned long)character;
       index++;
-      printf("Copied a char..%lx %c %i %c\n", character, (char)character, index, attribute[index]);
+      printf("Copied a char..%lx %c %i %c\n", character, (char)character, index, attribute_storage[index]);
     } else if (!is_equal_character(buffer, position+(index*4))) {
       // Invalid character found
       printf("Invalid character found..\n");
-      free(attribute); attribute = NULL;
+      free(attribute_storage); attribute_storage = NULL;
       return (long)-3;
     } else {
       printf("Success, reallocating memory..\n");
-      // *attribute = (unsigned long*)realloc(*attribute, sizeof(long)*index);
+      attribute_storage = realloc(attribute_storage, sizeof(long)*index);
+      *attribute = attribute_storage;
       return index;
     }
   } while (1);
@@ -400,17 +402,18 @@ int main() {
     printf("Position of trailing processing instruction: %i\n", stop);
     printf("And it was %c%c\n", read_unicode_character(buffer, stop),
 	   read_unicode_character(buffer, stop+4));
-    unsigned long* attribute = NULL;
+    unsigned long *attribute = NULL;
     long size = run_attribute_name(buffer, 7*4, &attribute);
     printf("sizeof(unsigned long): %i\n", sizeof(unsigned long));
-    printf("Contents: %c\n", &attribute[0]);
     printf("Attribute name, %lx: ", size);
+    printf("Address: %lx\n", &attribute);
+    printf("Contents: ");
     if (size > 0) {
       long index = 0;
       for (; index < size; index++) {
-	printf("%c %lx\n", &attribute[index], &attribute[index]);
+	printf("%c", attribute[index], attribute[index]);
       }
-      // free(attribute); attribute = NULL;
+      free(attribute); attribute = NULL;
     }
     printf("\n");
   } else {

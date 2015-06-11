@@ -1,0 +1,6 @@
+*.exe
+decode_xml.exe.stackdump
+*.txt~
+test.c~
+test.c
+out.txt
