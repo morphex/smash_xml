@@ -302,11 +302,11 @@ inline int is_name_character(char* buffer, long offset) {
 
 // Function that parses an attribute name and returns a
 // status value or the size.
-inline long run_attribute_name(char* buffer, unsigned long position, unsigned long *attribute) {
+inline long run_attribute_name(char* buffer, unsigned long position, unsigned long **attribute) {
   if (!is_name_start_character(buffer, position)) {
     return (long)-1;
   }
-  attribute = malloc(sizeof(char)*MAXIMUM_NAME_SIZE_BYTES);
+  *attribute = (unsigned long*)malloc(sizeof(long)*MAXIMUM_NAME_SIZE);
   if (attribute == 0) {
     return (long)0;
   }
@@ -316,16 +316,16 @@ inline long run_attribute_name(char* buffer, unsigned long position, unsigned lo
   unsigned long character = 0;
   printf("In run_attribute_name..\n");
   do {
-    if (index > (MAXIMUM_NAME_SIZE)) {
+    if (index > MAXIMUM_NAME_SIZE) {
       // Attribute name is too long
       free(attribute); attribute = NULL;
       return (long)-2;
     }
     character = read_unicode_character(buffer, position+(index*4));
     if (is_name_character(buffer, position+(index*4))){
-      *(attribute+index) = character;
+      attribute[index] = (unsigned long)character;
       index++;
-      printf("Copied a char..%lx %c %i\n", character, (char)character, index);
+      printf("Copied a char..%lx %c %i %c\n", character, (char)character, index, attribute[index]);
     } else if (!is_equal_character(buffer, position+(index*4))) {
       // Invalid character found
       printf("Invalid character found..\n");
@@ -333,7 +333,7 @@ inline long run_attribute_name(char* buffer, unsigned long position, unsigned lo
       return (long)-3;
     } else {
       printf("Success, reallocating memory..\n");
-      realloc(attribute, sizeof(char)*index*4);
+      // *attribute = (unsigned long*)realloc(*attribute, sizeof(long)*index);
       return index;
     }
   } while (1);
@@ -401,16 +401,18 @@ int main() {
     printf("And it was %c%c\n", read_unicode_character(buffer, stop),
 	   read_unicode_character(buffer, stop+4));
     unsigned long* attribute = NULL;
-    long size = run_attribute_name(buffer, 7*4, attribute);
+    long size = run_attribute_name(buffer, 7*4, &attribute);
+    printf("sizeof(unsigned long): %i\n", sizeof(unsigned long));
+    printf("Contents: %c\n", &attribute[0]);
     printf("Attribute name, %lx: ", size);
-    long index = *(attribute);
-    /*
-    for (; index < 1; index++) {
-      printf("%lx", *(attribute+index));
+    if (size > 0) {
+      long index = 0;
+      for (; index < size; index++) {
+	printf("%c %lx\n", &attribute[index], &attribute[index]);
+      }
+      // free(attribute); attribute = NULL;
     }
-    */
     printf("\n");
-    free(attribute); attribute = NULL;
   } else {
     printf("BOM not found, %x\n", read_unicode_character(buffer, 0));
     exit(1);
