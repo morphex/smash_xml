@@ -1,44 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
-
-/* #define DEBUG  */
-
-/* Default internal storage size for unicode characters */
-#define UNICODE_STORAGE_BYTES 4
-
-/* This handles -std=c90 on GCC, but what about other compilers? FIXME */
-#ifndef __GNUC__
-#define __inline__ inline
-#endif
-
-/*
-  Figures out whether the standard integer type is 32 bits wide;
-  if it isn't, the compilation should fail.
-*/
-
-#if UINT_MAX != 0xFFFFFFFF
-#  error Only systems with 32-bit wide integers (int) are supported
-#endif
-
-
-/*
-  Maximum element or attribute name size is 4 MB
-  or 1M 32 bit characters.
-*/
-const unsigned long MAXIMUM_NAME_SIZE = 1024*1024;
-const unsigned long MAXIMUM_NAME_SIZE_BYTES = 1024*1024*UNICODE_STORAGE_BYTES;
-
-/*
-  A union here gives an easy way to convert
-  from the byte form input buffer to the 32-
-  bit Unicode symbol form.
-*/
-
-union unicode_character {
-  unsigned char character[UNICODE_STORAGE_BYTES];
-  unsigned long unicode;
-};
+#include <globals.h>
 
 /*
   The Unicode version of <?
@@ -58,11 +21,6 @@ unsigned int xml_pi_x[3] = {0x0078, 0x0058, 0x0};
 unsigned int xml_pi_m[3] = {0x006d, 0x004d, 0x0};
 unsigned int xml_pi_l[3] = {0x006c, 0x004c, 0x0};
 /*
-  The variants of whitespace that are accepted as
-  spacers between attributes in element tags for example.
-*/
-unsigned int xml_whitespace[] = {0x0020, 0x0009, 0x000D, 0x000A, 0x0};
-/*
   The single characters that can be a at the
   start of an attribute name: ":" | "_"
 */
@@ -74,7 +32,9 @@ unsigned int name_start_character_single_characters[] = {0x003A, 0x005F, 0x00};
 unsigned int name_character_single_characters[] = {0x002D, 0x002E, 0x00B7, 0x00};
 
 __inline__ unsigned int read_unicode_character(unsigned char* buffer, long offset) {
-  unsigned long result = (buffer[offset+2] << 16) + (buffer[offset+1] << 8) + buffer[offset+0];
+  unsigned long result = (buffer[(offset*UNICODE_STORAGE_BYTES)+2] << 16) +
+    (buffer[(offset*UNICODE_STORAGE_BYTES)+1] << 8) +
+    buffer[(offset*UNICODE_STORAGE_BYTES)+0];
   return result;
 }
 
@@ -133,7 +93,7 @@ __inline__ int compare_unicode_character_array(char* buffer, unsigned long offse
       printf("miss compare_unicode_character_array: %ix - %ix\n", character, current_comparison);
       #endif
       index++;
-      character = read_unicode_character(buffer, offset+(index*UNICODE_STORAGE_BYTES));
+      character = read_unicode_character(buffer, offset+index);
     }
   }
   /* Nothing found, return -1 */
@@ -142,7 +102,9 @@ __inline__ int compare_unicode_character_array(char* buffer, unsigned long offse
 
 /* Function that returns true if character at offset is whitespace */
 __inline__ int is_whitespace(char* buffer, long offset) {
-  return compare_unicode_character_array(buffer, offset, xml_whitespace) > -1;
+  unsigned int character = read_unicode_character(buffer, offset);
+  return character == 0x0020 || character == 0x0009 | character == 0x000D ||
+    character == 0x000A;
 }
 
 /*
@@ -159,13 +121,13 @@ __inline__ unsigned long run_whitespace(char* buffer, long offset) {
     printf("run_whitespace character: %lx\n", character);
     #endif
     if (character == 0) {
-      return offset + ((index*UNICODE_STORAGE_BYTES) - UNICODE_STORAGE_BYTES);
+      return offset + (index-1);
     }
-    if (is_whitespace(buffer, offset+(index*UNICODE_STORAGE_BYTES))) {
+    if (is_whitespace(buffer, offset+index)) {
       index++;
       continue;
     } else {
-      return offset + (index*UNICODE_STORAGE_BYTES);
+      return offset + index;
     }
   } while (1);
 }
@@ -184,11 +146,11 @@ __inline__ unsigned long run_attribute_value(char* buffer, unsigned long offset,
   int index = 0;
   unsigned int character = 0;
   do {
-    character = read_unicode_character(buffer, offset+(index*UNICODE_STORAGE_BYTES));
+    character = read_unicode_character(buffer, offset+index);
     if (character == 0) {
       return -1;
     } else if (character == terminating_quote) {
-      return offset + (index*UNICODE_STORAGE_BYTES);
+      return offset + index;
     } else {
       index++;
     }
@@ -203,7 +165,7 @@ __inline__ int compare_unicode_string(char* buffer, unsigned long offset, unsign
   while (buffer_character != 0 && compare_to_character != 0) {
     if (buffer_character == compare_to_character) {
       index++;
-      buffer_character = read_unicode_character(buffer, offset+(index*UNICODE_STORAGE_BYTES));
+      buffer_character = read_unicode_character(buffer, offset+index);
       compare_to_character = compare_to[index];
       continue;
     }
@@ -233,9 +195,9 @@ __inline__ long run_unicode_string(char* buffer, unsigned long offset, unsigned 
   int index = 0;
   unsigned int character = 0;
   do {
-    character = read_unicode_character(buffer, offset+(index*UNICODE_STORAGE_BYTES));
+    character = read_unicode_character(buffer, offset+index);
     #ifdef DEBUG
-    printf("Search loop: %lx %lx\n", offset+(index*UNICODE_STORAGE_BYTES), character);
+    printf("Search loop: %lx %lx\n", offset+index, character);
     #endif
     if (character == 0) {
       return -1;
@@ -243,8 +205,8 @@ __inline__ long run_unicode_string(char* buffer, unsigned long offset, unsigned 
       #ifdef DEBUG
       printf("\tFound matching character\n");
       #endif
-      if (!compare_unicode_string(buffer, offset+(index*UNICODE_STORAGE_BYTES), compare_to)) {
-	  return offset + (index*UNICODE_STORAGE_BYTES);
+      if (!compare_unicode_string(buffer, offset+index, compare_to)) {
+	  return offset + index;
       }
     }
     index++;
@@ -257,26 +219,25 @@ int validate_unicode_xml_1(char* buffer, int length) {
     Validates an XML buffer as if it had been read from
     the filesystem, with a 4 byte BOM at the beginning
   */
-  union unicode_character character;
-  character.unicode = 0;
-  int counter = UNICODE_STORAGE_BYTES;
-  for (; counter < length; counter += UNICODE_STORAGE_BYTES) {
-    character.unicode = read_unicode_character(buffer, counter);
-    if (character.unicode == 0x0009 ||
-	character.unicode == 0x000A ||
-	character.unicode == 0x000D) {
+  unsigned int character = 0;
+  int counter = 1;
+  for (; counter < length; counter += 1) {
+    character = read_unicode_character(buffer, counter);
+    if (character == 0x0009 ||
+	character == 0x000A ||
+	character == 0x000D) {
       /* C0 controls, continue */
       continue;
-    } else if (character.unicode >= 0x0020 &&
-	       character.unicode <= 0xD7FF) {
+    } else if (character >= 0x0020 &&
+	       character <= 0xD7FF) {
       /* Allowed characters, continue */
       continue;
-    } else if (character.unicode >= 0xE000 &&
-	       character.unicode <= 0xFFFD) {
+    } else if (character >= 0xE000 &&
+	       character <= 0xFFFD) {
       /* Allowed characters, continue */
       continue;
-    } else if (character.unicode >= 0x10000 &&
-	       character.unicode <= 0x10FFFF) {
+    } else if (character >= 0x10000 &&
+	       character <= 0x10FFFF) {
       /* Allowed characters, continue */
       continue;
     } else {
@@ -348,7 +309,7 @@ __inline__ int run_attribute_name(char* buffer, unsigned long position, unsigned
   if (!is_name_start_character(buffer, position)) {
     return -1;
   }
-  unsigned int *attribute_storage = malloc(sizeof(int)*MAXIMUM_NAME_SIZE);
+  unsigned int *attribute_storage = malloc(sizeof(unsigned int)*MAXIMUM_NAME_SIZE);
   if (attribute_storage == 0) {
     return 0;
   }
@@ -367,8 +328,8 @@ __inline__ int run_attribute_name(char* buffer, unsigned long position, unsigned
       free(attribute_storage); attribute_storage = NULL;
       return -2;
     }
-    character = read_unicode_character(buffer, position+(index*UNICODE_STORAGE_BYTES));
-    if (is_name_character(buffer, position+(index*UNICODE_STORAGE_BYTES))) {
+    character = read_unicode_character(buffer, position+index);
+    if (is_name_character(buffer, position+index)) {
       #ifdef DEBUG
       printf("Address: %i\n", &attribute[index]);
       #endif
@@ -377,7 +338,7 @@ __inline__ int run_attribute_name(char* buffer, unsigned long position, unsigned
       #ifdef DEBUG
       printf("Copied a char..%lx %c %i %c\n", character, (char)character, index, attribute_storage[index]);
       #endif
-    } else if (!is_equal_character(buffer, position+(index*UNICODE_STORAGE_BYTES))) {
+    } else if (!is_equal_character(buffer, position+index)) {
       /* Invalid character found */
       #ifdef DEBUG
       printf("Invalid character found..\n");
@@ -389,6 +350,9 @@ __inline__ int run_attribute_name(char* buffer, unsigned long position, unsigned
       printf("Success, reallocating memory..\n");
       #endif
       attribute_storage = realloc(attribute_storage, sizeof(int)*index);
+      if (attribute_storage == NULL) {
+	return 0;
+      }
       *attribute = attribute_storage;
       return index;
     }

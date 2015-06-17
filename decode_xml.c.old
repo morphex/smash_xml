@@ -15,10 +15,6 @@
     printf("Found M or m in buffer: %i\n", result > -1);
     result = compare_unicode_character_array(buffer, sizeof(char)*UNICODE_STORAGE_BYTES*5, xml_pi_l);
     printf("Found L or l in buffer: %i\n", result > -1);
-    result = run_whitespace(buffer, sizeof(char)*UNICODE_STORAGE_BYTES*6);
-    printf("First non-whitespace after pi_start at position: %i\n", result);
-    long result2 = read_unicode_character(buffer, result);
-    printf("Character %c %x\n", (int) result2, result2);
     int result3 = is_name_start_character(buffer, result);
     printf("Character is a name start character: %i\n", result3);
     int result4 = is_name_character(buffer, result+4);

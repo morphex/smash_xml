@@ -24,16 +24,25 @@ int main() {
   if (!is_valid_stream(read)) {
     HANDLE_ERROR("Invalid Unicode stream, read %l bytes", read)
   }
-  if (read_unicode_character(buffer, 4) != 0x3c) {
+  if (read_unicode_character(buffer, 1) != 0x3c) {
     HANDLE_ERROR("Expected < at position 4", 0)
   }
-  if (read_unicode_character(buffer, 4+(4*76)) != 0xc5) {
+  if (read_unicode_character(buffer, 1+76) != 0xc5) {
     HANDLE_ERROR("Expected A with ring above (0xc5) at position 76", 0)
   }
-  if (read_unicode_character(buffer, 4+(4*120)) != 0x10FFFF) {
+  if (read_unicode_character(buffer, 1+120) != 0x10FFFF) {
     HANDLE_ERROR("Expected (0x10FFFF) at position 120", 0)
   }
-  printf("sizeof(short): %i\n", sizeof(short));
-  printf("sizeof(int): %i\n", sizeof(int));
-  printf("sizeof(long): %i\n", sizeof(long));
+  {
+    unsigned int result = run_whitespace(buffer, 6);
+    unsigned long result2 = read_unicode_character(buffer, result);
+    if ((char) result2 != 'v') {
+      HANDLE_ERROR("Expected character v at position 7", 0)
+    }
+  }
+  /*
+    printf("sizeof(short): %i\n", sizeof(short));
+    printf("sizeof(int): %i\n", sizeof(int));
+    printf("sizeof(long): %i\n", sizeof(long));
+  */
 }
