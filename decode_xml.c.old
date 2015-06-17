@@ -1,0 +1,65 @@
+  if (read < 4) {
+    // Not enough data to process
+    printf("File not large enough, only %l bytes\n", read);
+    exit(1);
+  }
+    // We have a UTF-32-LE Byte Order Mark
+    int result = 0;
+    result = validate_unicode_xml_1(buffer, read);
+    printf("Unicode validation: %i\n", result);
+    result = compare_unicode_string(buffer, sizeof(char)*4, pi_start);
+    printf("Starts with XML processing instruction: %i\n", result);
+    result = compare_unicode_character_array(buffer, sizeof(char)*UNICODE_STORAGE_BYTES*3, xml_pi_x);
+    printf("Found X or x in buffer: %i\n", result > -1);
+    result = compare_unicode_character_array(buffer, sizeof(char)*UNICODE_STORAGE_BYTES*4, xml_pi_m);
+    printf("Found M or m in buffer: %i\n", result > -1);
+    result = compare_unicode_character_array(buffer, sizeof(char)*UNICODE_STORAGE_BYTES*5, xml_pi_l);
+    printf("Found L or l in buffer: %i\n", result > -1);
+    result = run_whitespace(buffer, sizeof(char)*UNICODE_STORAGE_BYTES*6);
+    printf("First non-whitespace after pi_start at position: %i\n", result);
+    long result2 = read_unicode_character(buffer, result);
+    printf("Character %c %x\n", (int) result2, result2);
+    int result3 = is_name_start_character(buffer, result);
+    printf("Character is a name start character: %i\n", result3);
+    int result4 = is_name_character(buffer, result+4);
+    printf("Following character is a name character: %i\n", result4);
+    unsigned long result5 = read_unicode_character(buffer, result+4);
+    printf("And its the character %c\n", result5);
+    printf("Character %c\n", (char)read_unicode_character(buffer, result+(UNICODE_STORAGE_BYTES*7)));
+    printf("Is equal character %i\n", (char)is_equal_character(buffer, result+(4*7)));
+    unsigned long quote = is_attribute_value_start(buffer, result+(UNICODE_STORAGE_BYTES*8));
+    printf("Is attribute value start: 0x%lx\n", quote);
+    unsigned long position = run_attribute_value(buffer, result+(UNICODE_STORAGE_BYTES*8),
+						 quote);
+    if (position == -1) { // Invalid XML
+      printf("Invalid XML, no terminating quote found after %lx",
+	     result+(UNICODE_STORAGE_BYTES*8));
+    }
+    printf("Position of terminating quote: %lx\n", position);
+    printf("Value: %c\n", read_unicode_character(buffer, position));
+    unsigned long stop = run_unicode_string(buffer, position, pi_stop);
+    printf("Position of trailing processing instruction: %i\n", stop);
+    printf("And it was %c%c\n", read_unicode_character(buffer, stop),
+	   read_unicode_character(buffer, stop+UNICODE_STORAGE_BYTES));
+    unsigned long *attribute = NULL;
+    long size = run_attribute_name(buffer, 7*UNICODE_STORAGE_BYTES, &attribute);
+    printf("sizeof(unsigned long): %i\n", sizeof(unsigned long));
+    printf("Attribute name, %lx: ", size);
+    printf("Address: %lx\n", &attribute);
+    printf("Contents: ");
+    if (size > 0) {
+      long index = 0;
+      for (; index < size; index++) {
+	printf("%c", attribute[index], attribute[index]);
+      }
+      free(attribute); attribute = NULL;
+    }
+    printf("\n");
+  } else {
+    printf("BOM not found, %x\n", read_unicode_character(buffer, 0));
+    exit(1);
+  }
+  printf("%i\n", read);
+  fwrite(buffer, read, sizeof(char), stdout);
+  printf("\n");
+  free(buffer); buffer = NULL;
