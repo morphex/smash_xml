@@ -4,3 +4,4 @@ decode_xml.exe.stackdump
 test.c~
 test.c
 out.txt
+*.c~

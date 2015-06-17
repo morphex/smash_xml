@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
 
 /* #define DEBUG  */
 
@@ -10,6 +11,16 @@
 #ifndef __GNUC__
 #define __inline__ inline
 #endif
+
+/*
+  Figures out whether the standard integer type is 32 bits wide;
+  if it isn't, the compilation should fail.
+*/
+
+#if UINT_MAX != 0xFFFFFFFF
+#  error Only systems with 32-bit wide integers (int) are supported
+#endif
+
 
 /*
   Maximum element or attribute name size is 4 MB
@@ -36,45 +47,35 @@ union unicode_character {
 
   The 0 is a sign to stop this string
 */
-unsigned long pi_start[3] = {0x003c, 0x003f, 0x0};
+unsigned int pi_start[3] = {0x003c, 0x003f, 0x0};
 /* The Unicode version of ?> */
-unsigned long pi_stop[3] = {0x003f, 0x003e, 0x0};
+unsigned int pi_stop[3] = {0x003f, 0x003e, 0x0};
 /*
   XML identifier, for indentifying the beginning
   (X|x)(M|m)(L|l) processing instruction
 */
-unsigned long xml_pi_x[3] = {0x0078, 0x0058, 0x0};
-unsigned long xml_pi_m[3] = {0x006d, 0x004d, 0x0};
-unsigned long xml_pi_l[3] = {0x006c, 0x004c, 0x0};
+unsigned int xml_pi_x[3] = {0x0078, 0x0058, 0x0};
+unsigned int xml_pi_m[3] = {0x006d, 0x004d, 0x0};
+unsigned int xml_pi_l[3] = {0x006c, 0x004c, 0x0};
 /*
   The variants of whitespace that are accepted as
   spacers between attributes in element tags for example.
 */
-unsigned long xml_whitespace[] = {0x0020, 0x0009, 0x000D, 0x000A, 0x0};
+unsigned int xml_whitespace[] = {0x0020, 0x0009, 0x000D, 0x000A, 0x0};
 /*
   The single characters that can be a at the
   start of an attribute name: ":" | "_"
 */
-unsigned long name_start_character_single_characters[] = {0x003A, 0x005F, 0x00};
+unsigned int name_start_character_single_characters[] = {0x003A, 0x005F, 0x00};
 /*
   The single characters that can be a part of
   an attribute name: "-" | "." | 0x00B7
 */
-unsigned long name_character_single_characters[] = {0x002D, 0x002E, 0x00B7, 0x00};
+unsigned int name_character_single_characters[] = {0x002D, 0x002E, 0x00B7, 0x00};
 
-__inline__ unsigned long read_unicode_character(unsigned char* buffer, long offset) {
-  /*
-    long result = (buffer[offset+3] << 16) + (buffer[offset+2] << 8) + buffer[offset+1];
-    printf("Read character %lx\n", result);
-    return result;
-  */
-  union unicode_character character;
-  character.unicode = 0;
-  character.character[0] = buffer[offset+0];
-  character.character[1] = buffer[offset+1];
-  character.character[2] = buffer[offset+2];
-  character.character[3] = buffer[offset+3];
-  return character.unicode;
+__inline__ unsigned int read_unicode_character(unsigned char* buffer, long offset) {
+  unsigned long result = (buffer[offset+2] << 16) + (buffer[offset+1] << 8) + buffer[offset+0];
+  return result;
 }
 
 __inline__ int is_equal_character(char* buffer, unsigned long offset) {
@@ -84,10 +85,10 @@ __inline__ int is_equal_character(char* buffer, unsigned long offset) {
 /*
   Returns 0 if character is not "'" | '"'
 
-  Returns long 0x22 for " and 0x27 for '
+  Returns uint 0x22 for " and 0x27 for '
 */
 __inline__ unsigned long is_attribute_value_start(char* buffer, unsigned long offset) {
-  unsigned long character = read_unicode_character(buffer, offset);
+  unsigned int character = read_unicode_character(buffer, offset);
   if (character == 0x22 || character == 0x27) {
     return character;
   } else {
@@ -97,7 +98,7 @@ __inline__ unsigned long is_attribute_value_start(char* buffer, unsigned long of
 
 /* Returns 0 if strings are similar */
 __inline__ int compare_unicode_character(char* buffer, unsigned long offset, unsigned long compare_to) {
-  unsigned long character = read_unicode_character(buffer, offset);
+  unsigned int character = read_unicode_character(buffer, offset);
   #ifdef DEBUG
   printf("compare_unicode_character: %lx - %lx\n", character, compare_to);
   #endif
@@ -109,10 +110,10 @@ __inline__ int compare_unicode_character(char* buffer, unsigned long offset, uns
     return -1;
 }
 
-__inline__ int compare_unicode_character_array(char* buffer, unsigned long offset, unsigned long* compare_to) {
+__inline__ int compare_unicode_character_array(char* buffer, unsigned long offset, unsigned int* compare_to) {
   int index = 0;
-  unsigned long character = read_unicode_character(buffer, offset);
-  unsigned long current_comparison;
+  unsigned int character = read_unicode_character(buffer, offset);
+  unsigned int current_comparison;
   while (1) {
     current_comparison = compare_to[index];
     if (current_comparison == 0) {
@@ -124,45 +125,15 @@ __inline__ int compare_unicode_character_array(char* buffer, unsigned long offse
 	return offset + (index*UNICODE_STORAGE_BYTES);
       */
       #ifdef DEBUG
-      printf("compare_unicode_character_array: %lx - %lx\n", character, current_comparison);
+      printf("compare_unicode_character_array: %ix - %ix\n", character, current_comparison);
       #endif
       return index;
     } else {
       #ifdef DEBUG
-      printf("miss compare_unicode_character_array: %lx - %lx\n", character, current_comparison);
+      printf("miss compare_unicode_character_array: %ix - %ix\n", character, current_comparison);
       #endif
       index++;
       character = read_unicode_character(buffer, offset+(index*UNICODE_STORAGE_BYTES));
-    }
-  }
-  /* Nothing found, return -1 */
-  return -1;
-}
-
-/* Doesn't look like this function is necessary anymore. FIXME */
-int disabled___compare_character_character_array(long character, long* compare_to) {
-  int index = 0;
-  long current_comparison;
-  while (1) {
-    current_comparison = compare_to[index];
-    if (current_comparison == 0) {
-      break;
-    }
-    if (character == current_comparison) {
-      /*
-	A return value of 0 or more means success.
-	return offset + (index*UNICODE_STORAGE_BYTES);
-      */
-      printf("compare_character_character_array: %lx - %lx\n", character, current_comparison);
-      return index;
-    } else {
-      printf("miss compare_character_character_array: %lx - %lx\n", character, current_comparison);
-      index++;
-      /* 
-	 character ends up being a long with the proper unicode
-	 values, but with random bytes prepended.
-	 character = read_unicode_character(buffer, offset+(index*UNICODE_STORAGE_BYTES));
-      */
     }
   }
   /* Nothing found, return -1 */
@@ -181,7 +152,7 @@ __inline__ int is_whitespace(char* buffer, long offset) {
 */
 __inline__ unsigned long run_whitespace(char* buffer, long offset) {
   unsigned long index = 0;
-  unsigned long character = 0;
+  unsigned int character = 0;
   do {
     character = read_unicode_character(buffer, offset+(index*UNICODE_STORAGE_BYTES));
     #ifdef DEBUG
@@ -211,7 +182,7 @@ __inline__ unsigned long run_whitespace(char* buffer, long offset) {
 __inline__ unsigned long run_attribute_value(char* buffer, unsigned long offset,
 				unsigned long terminating_quote) {
   int index = 0;
-  unsigned long character = 0;
+  unsigned int character = 0;
   do {
     character = read_unicode_character(buffer, offset+(index*UNICODE_STORAGE_BYTES));
     if (character == 0) {
@@ -225,10 +196,10 @@ __inline__ unsigned long run_attribute_value(char* buffer, unsigned long offset,
 }
 
 /* Returns 0 if strings are similar */
-__inline__ int compare_unicode_string(char* buffer, unsigned long offset, unsigned long* compare_to) {
+__inline__ int compare_unicode_string(char* buffer, unsigned long offset, unsigned int* compare_to) {
   unsigned long index = 0;
-  unsigned long buffer_character = read_unicode_character(buffer, offset);
-  unsigned long compare_to_character = compare_to[0];
+  unsigned int buffer_character = read_unicode_character(buffer, offset);
+  unsigned int compare_to_character = compare_to[0];
   while (buffer_character != 0 && compare_to_character != 0) {
     if (buffer_character == compare_to_character) {
       index++;
@@ -258,9 +229,9 @@ __inline__ int compare_unicode_string(char* buffer, unsigned long offset, unsign
 
   FIXME size of long on large buffer
 */
-__inline__ unsigned long run_unicode_string(char* buffer, unsigned long offset, unsigned long* compare_to) {
+__inline__ long run_unicode_string(char* buffer, unsigned long offset, unsigned int* compare_to) {
   int index = 0;
-  unsigned long character = 0;
+  unsigned int character = 0;
   do {
     character = read_unicode_character(buffer, offset+(index*UNICODE_STORAGE_BYTES));
     #ifdef DEBUG
@@ -323,7 +294,7 @@ __inline__ int is_name_start_character(char* buffer, unsigned long offset) {
     #endif
     return 1;
   }
-  unsigned long character = read_unicode_character(buffer, offset);
+  unsigned int character = read_unicode_character(buffer, offset);
   if ((character >= 0x0061 && character <= 0x007A) || /* [a-z] */
       (character >= 0x0041 && character <= 0x005A) || /* [A-Z] */
       (character >= 0x00C0 && character <= 0x00D6) || /* [#xC0-#xD6] */
@@ -357,7 +328,7 @@ __inline__ int is_name_character(char* buffer, unsigned long offset) {
     #endif
     return 1;
   }
-  unsigned long character = read_unicode_character(buffer, offset);
+  unsigned int character = read_unicode_character(buffer, offset);
   if ((character >= 0x0030 && character <= 0x0039) || /* [0-9] */
       (character >= 0x0300 && character <= 0x036F) || /* [#x300-#x36F] */
       (character >= 0x203F && character <= 0x2040)) { /* [#x203F-#x2040] */
@@ -373,11 +344,11 @@ __inline__ int is_name_character(char* buffer, unsigned long offset) {
   Function that parses an attribute name and returns a
   status value or the size.
 */
-__inline__ long run_attribute_name(char* buffer, unsigned long position, unsigned long **attribute) {
+__inline__ int run_attribute_name(char* buffer, unsigned long position, unsigned int **attribute) {
   if (!is_name_start_character(buffer, position)) {
     return -1;
   }
-  unsigned long *attribute_storage = malloc(sizeof(long)*MAXIMUM_NAME_SIZE);
+  unsigned int *attribute_storage = malloc(sizeof(int)*MAXIMUM_NAME_SIZE);
   if (attribute_storage == 0) {
     return 0;
   }
@@ -386,7 +357,7 @@ __inline__ long run_attribute_name(char* buffer, unsigned long position, unsigne
     it via the loop to keep the code simple.
   */
   unsigned long index = 0;
-  unsigned long character = 0;
+  unsigned int character = 0;
   #ifdef DEBUG
   printf("In run_attribute_name..\n");
   #endif
@@ -401,7 +372,7 @@ __inline__ long run_attribute_name(char* buffer, unsigned long position, unsigne
       #ifdef DEBUG
       printf("Address: %i\n", &attribute[index]);
       #endif
-      attribute_storage[index] = (unsigned long)character;
+      attribute_storage[index] = character;
       index++;
       #ifdef DEBUG
       printf("Copied a char..%lx %c %i %c\n", character, (char)character, index, attribute_storage[index]);
@@ -417,7 +388,7 @@ __inline__ long run_attribute_name(char* buffer, unsigned long position, unsigne
       #ifdef DEBUG
       printf("Success, reallocating memory..\n");
       #endif
-      attribute_storage = realloc(attribute_storage, sizeof(long)*index);
+      attribute_storage = realloc(attribute_storage, sizeof(int)*index);
       *attribute = attribute_storage;
       return index;
     }
