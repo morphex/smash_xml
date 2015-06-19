@@ -5,7 +5,7 @@
 #define BUFFER_SIZE 1024
 
 struct message_linked_list {
-  char data[1024];
+  char data[BUFFER_SIZE];
   unsigned char is_last;
   struct message_linked_list *next;
 };
