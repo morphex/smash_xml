@@ -32,7 +32,7 @@ int main() {
   struct message_linked_list *working_free = head;
   while (working_free) {
     printf("Free: %s\n", working_free->data);
-    free(working_free);
     working_free = working_free->next;
+    free(working_free);
   }
 }
