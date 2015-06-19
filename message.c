@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+#define BUFFER_SIZE 1024
 
 struct message_linked_list {
   char data[1024];
@@ -7,14 +10,22 @@ struct message_linked_list {
   struct message_linked_list *next;
 };
 
+struct message_linked_list* create_message_linked_list() {
+    struct message_linked_list *mll = (struct message_linked_list*)\
+      malloc(sizeof(struct message_linked_list));
+    memset(mll->data, 0, BUFFER_SIZE);
+    mll->is_last = 0;
+    mll->next = NULL;
+    return mll;
+}
+
 int main() {
   int index = 0;
   struct message_linked_list *head = NULL;
   struct message_linked_list *message = NULL;
   struct message_linked_list *previous = NULL;
   for (; index < 10; index++) {
-    message = (struct message_linked_list*)\
-              malloc(sizeof(struct message_linked_list));
+    message = create_message_linked_list();
     if (!head) {
       head = message;
     }
