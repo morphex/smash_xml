@@ -30,9 +30,11 @@ int main() {
     working = working->next;
   }
   struct message_linked_list *working_free = head;
+  struct message_linked_list *working_free_old = NULL;
   while (working_free) {
     printf("Free: %s\n", working_free->data);
+    working_free_old = working_free;
     working_free = working_free->next;
-    free(working_free);
+    free(working_free_old);
   }
 }
