@@ -18,7 +18,11 @@ int main() {
   FILE *file = NULL;
   file = fopen("test.xml.2", "rb+");
   read = fread(buffer, sizeof(char), 1023, file);
-  buffer[read] = 0x00;
+  /*
+    FIXME, linked lists or something similar,
+    terminating character.
+  */
+  buffer[read] = 0x00; 
   if (!is_valid_bom(buffer)) {
     HANDLE_ERROR("BOM not found", 0)
   }
@@ -26,7 +30,7 @@ int main() {
     HANDLE_ERROR("Invalid Unicode stream, read %l bytes", read)
   }
   if (read_unicode_character(buffer, 1) != 0x3c) {
-    HANDLE_ERROR("Expected < at position 4", 0)
+    HANDLE_ERROR("Expected < at position 1", 0)
   }
   if (read_unicode_character(buffer, 1+76) != 0xc5) {
     HANDLE_ERROR("Expected A with ring above (0xc5) at position 76", 0)
@@ -47,30 +51,30 @@ int main() {
     unsigned long result3 = run_attribute_value(buffer, 31, quote);
     if (result3 != 39) {
       HANDLE_ERROR("Expected position 39, got position %i", result3)
-	}
+    }
 
     quote = read_unicode_character(buffer, 145);
     result3 = run_attribute_value(buffer, 146, quote);
     if (result3 != 148) {
       HANDLE_ERROR("Expected position 149, got position %i", result3)
-	}
+    }
 
     quote = read_unicode_character(buffer, 172);
     result3 = run_attribute_value(buffer, 173, quote);
     if (result3 != 178) {
       HANDLE_ERROR("Expected position 178, got position %i", result3)
-	}        
+    }        
 
     quote = read_unicode_character(buffer, 206);
     result3 = run_attribute_value(buffer, 207, quote);
     #ifndef TOLERATE_MINOR_ERRORS
     if (result3 != 0) {
       HANDLE_ERROR("Expected position 0 (failure), got position %i", result3)
-	}
+    }
     #else
     if (result3 != 211) {
       HANDLE_ERROR("Expected position 211, got position %i", result3)
-	}            
+    }            
     #endif
   }
   {

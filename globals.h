@@ -9,8 +9,7 @@
 #endif
 
 /*
-  Figures out whether the standard integer type is 32 bits wide;
-  if it isn't, the compilation should fail.
+  Sets the unicode_char type to be at least 32 bits
 */
 
 #if UINT_MAX >= 0x1FFFFF
@@ -46,7 +45,7 @@ typedef unsigned long source_buffer_index;
   Whether to be tolerant to minor errors in XML markup.
 
   If set errors like an unescaped ampersand or ELEMENT_STARTTAG
-  are tolerated in attribute values are tolerated.
+  are tolerated in attribute values.
 */
 /*
 #define TOLERATE_MINOR_ERRORS

@@ -29,14 +29,16 @@ unicode_char name_start_character_single_characters[] = {0x003A, 0x005F, 0x00};
   The single characters that can be a part of
   an attribute name: "-" | "." | 0x00B7
 */
-unicode_char name_character_single_characters[] = {0x002D, 0x002E, 0x00B7, 0x00};
+unicode_char name_character_single_characters[] = {0x002D, 0x002E, 0x00B7,
+						   0x00};
 
 /*
   The &amp; escape without the prepending &, in other words amp;
 */
 unicode_char ampersand_escape_without_ampersand[] = {0x61,0x6d,0x70,0x3b,0x00};
 
-__inline__ unicode_char read_unicode_character(unsigned char* buffer, long offset) {
+__inline__ unicode_char read_unicode_character(unsigned char* buffer,
+					       long offset) {
   unicode_char result = (buffer[(offset*UNICODE_STORAGE_BYTES)+2] << 16) +
     (buffer[(offset*UNICODE_STORAGE_BYTES)+1] << 8) +
     buffer[(offset*UNICODE_STORAGE_BYTES)+0];
@@ -52,7 +54,8 @@ __inline__ int is_equal_character(char* buffer, source_buffer_index offset) {
 
   Returns uint 0x22 for " and 0x27 for '
 */
-__inline__ unicode_char is_attribute_value_start(char* buffer, source_buffer_index offset) {
+__inline__ unicode_char is_attribute_value_start(char* buffer,
+						 source_buffer_index offset) {
   unicode_char character = read_unicode_character(buffer, offset);
   if (character == 0x22 || character == 0x27) {
     return character;
@@ -62,7 +65,9 @@ __inline__ unicode_char is_attribute_value_start(char* buffer, source_buffer_ind
 }
 
 /* Returns 0 if strings are similar */
-__inline__ int compare_unicode_character(char* buffer, source_buffer_index offset, unicode_char compare_to) {
+__inline__ int compare_unicode_character(char* buffer,
+					 source_buffer_index offset,
+					 unicode_char compare_to) {
   unicode_char character = read_unicode_character(buffer, offset);
   #ifdef DEBUG
   printf("compare_unicode_character: %lx - %lx\n", character, compare_to);
@@ -75,7 +80,9 @@ __inline__ int compare_unicode_character(char* buffer, source_buffer_index offse
     return -1;
 }
 
-__inline__ int compare_unicode_character_array(char* buffer, source_buffer_index offset, unicode_char* compare_to) {
+__inline__ int compare_unicode_character_array(char* buffer,
+					       source_buffer_index offset,
+					       unicode_char* compare_to) {
   int index = 0;
   unicode_char character = read_unicode_character(buffer, offset);
   unicode_char current_comparison;
@@ -90,12 +97,14 @@ __inline__ int compare_unicode_character_array(char* buffer, source_buffer_index
 	return offset + (index*UNICODE_STORAGE_BYTES);
       */
       #ifdef DEBUG
-      printf("compare_unicode_character_array: %ix - %ix\n", character, current_comparison);
+      printf("compare_unicode_character_array: %ix - %ix\n",
+	     character, current_comparison);
       #endif
       return index;
     } else {
       #ifdef DEBUG
-      printf("miss compare_unicode_character_array: %ix - %ix\n", character, current_comparison);
+      printf("miss compare_unicode_character_array: %ix - %ix\n",
+	     character, current_comparison);
       #endif
       index++;
       character = read_unicode_character(buffer, offset+index);
@@ -117,11 +126,13 @@ __inline__ int is_whitespace(char* buffer, long offset) {
   characters.  When a non-whitespace character is found,
   returns the position.
 */
-__inline__ source_buffer_index run_whitespace(char* buffer, source_buffer_index offset) {
+__inline__ source_buffer_index run_whitespace(char* buffer,
+					      source_buffer_index offset) {
   source_buffer_index index = 0;
   unicode_char character = 0;
   do {
-    character = read_unicode_character(buffer, offset+(index*UNICODE_STORAGE_BYTES));
+    character = read_unicode_character(buffer,
+				       offset+(index*UNICODE_STORAGE_BYTES));
     #ifdef DEBUG
     printf("run_whitespace character: %lx\n", character);
     #endif
@@ -143,12 +154,14 @@ __inline__ source_buffer_index run_whitespace(char* buffer, source_buffer_index 
 
   Returns the position of the single or double quote.
 */
-__inline__ source_buffer_index run_attribute_value(char* buffer, source_buffer_index offset, unicode_char terminating_quote) {
+__inline__ source_buffer_index run_attribute_value(char* buffer,
+						   source_buffer_index offset,
+						   unicode_char end_quote) {
   int index = 0;
   unicode_char character = 0;
   #ifdef DEBUG
   printf("In run_attribute_value\n");
-  printf("Quote: %c\n", (char) terminating_quote);
+  printf("Quote: %c\n", (char) end_quote);
   #endif
  do {
     character = read_unicode_character(buffer, offset+index);
@@ -157,7 +170,7 @@ __inline__ source_buffer_index run_attribute_value(char* buffer, source_buffer_i
     #endif
     if (character == 0) {
       return 0;
-    } else if (character == terminating_quote) {
+    } else if (character == end_quote) {
       return offset + index;
     } else if (character == ELEMENT_STARTTAG) {
       /* < in an attribute value is a no-no */
@@ -165,7 +178,8 @@ __inline__ source_buffer_index run_attribute_value(char* buffer, source_buffer_i
       return 0;
       #endif
     } else if (character == AMPERSAND) {
-      if(!compare_unicode_string(buffer, offset+1, ampersand_escape_without_ampersand)) {
+      if(!compare_unicode_string(buffer, offset+1,
+				 ampersand_escape_without_ampersand)) {
 	index = index += 3;
       } else {
 	/* Improperly encoded & */
@@ -179,7 +193,9 @@ __inline__ source_buffer_index run_attribute_value(char* buffer, source_buffer_i
   }
 
 /* Returns 0 if strings are similar */
-__inline__ int compare_unicode_string(char* buffer, source_buffer_index offset, unicode_char* compare_to) {
+__inline__ int compare_unicode_string(char* buffer,
+				      source_buffer_index offset,
+				      unicode_char* compare_to) {
   source_buffer_index index = 0;
   unicode_char buffer_character = read_unicode_character(buffer, offset);
   unicode_char compare_to_character = compare_to[0];
@@ -193,7 +209,8 @@ __inline__ int compare_unicode_string(char* buffer, source_buffer_index offset, 
     if (buffer_character > compare_to_character) {
       #ifdef DEBUG
       printf("index: %lx\n", index);
-      printf("buffer_character %lx - compare_to_character %lx", buffer_character, compare_to_character);
+      printf("buffer_character %lx - compare_to_character %lx",
+	     buffer_character, compare_to_character);
       #endif
       return 1;
     }
@@ -212,7 +229,8 @@ __inline__ int compare_unicode_string(char* buffer, source_buffer_index offset, 
 
   FIXME size of long on large buffer
 */
-__inline__ long run_unicode_string(char* buffer, source_buffer_index offset, unicode_char* compare_to) {
+__inline__ long run_unicode_string(char* buffer, source_buffer_index offset,
+				   unicode_char* compare_to) {
   int index = 0;
   unicode_char character = 0;
   do {
@@ -268,9 +286,10 @@ int validate_unicode_xml_1(char* buffer, int length) {
   return 0;
 }
 
-__inline__ int is_name_start_character(char* buffer, source_buffer_index offset) {
+__inline__ int is_name_start_character(char* buffer,
+				       source_buffer_index offset) {
   if (compare_unicode_character_array(buffer, offset,
-				      name_start_character_single_characters) >= 0) {
+		      name_start_character_single_characters) >= 0) {
     #ifdef DEBUG
     printf("name_start_character 1\n");
     #endif
@@ -326,11 +345,13 @@ __inline__ int is_name_character(char* buffer, source_buffer_index offset) {
   Function that parses an attribute name and returns a
   status value or the size.
 */
-__inline__ int run_attribute_name(char* buffer, source_buffer_index position, unicode_char **attribute) {
+__inline__ int run_attribute_name(char* buffer, source_buffer_index position,
+				  unicode_char **attribute) {
   if (!is_name_start_character(buffer, position)) {
     return -1;
   }
-  unicode_char *attribute_storage = malloc(sizeof(unicode_char)*MAXIMUM_NAME_SIZE);
+  unicode_char *attribute_storage = malloc(sizeof(unicode_char)*
+					   MAXIMUM_NAME_SIZE);
   if (attribute_storage == 0) {
     return 0;
   }
@@ -357,7 +378,8 @@ __inline__ int run_attribute_name(char* buffer, source_buffer_index position, un
       attribute_storage[index] = character;
       index++;
       #ifdef DEBUG
-      printf("Copied a char..%lx %c %i %c\n", character, (char)character, index, attribute_storage[index]);
+      printf("Copied a char..%lx %c %i %c\n", character, (char)character,
+	     index, attribute_storage[index]);
       #endif
     } else if (!is_equal_character(buffer, position+index)) {
       /* Invalid character found */
@@ -370,7 +392,8 @@ __inline__ int run_attribute_name(char* buffer, source_buffer_index position, un
       #ifdef DEBUG
       printf("Success, reallocating memory..\n");
       #endif
-      attribute_storage = realloc(attribute_storage, sizeof(int)*index);
+      attribute_storage = realloc(attribute_storage,
+				  sizeof(unicode_char)*index);
       if (attribute_storage == NULL) {
 	return 0;
       }
@@ -382,9 +405,8 @@ __inline__ int run_attribute_name(char* buffer, source_buffer_index position, un
 
 /*
   Reads amount of unicode characters into buffer
-  and converts 4-byte characters to 3-byte
-  characters if the internal unicode storage
-  size is 3.
+  and converts 4-byte characters to 21-bits if
+  that's the setting.
 */
 int read_into_buffer(buffer, size, amount, file) {
 }
