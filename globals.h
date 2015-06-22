@@ -9,13 +9,24 @@
 #endif
 
 /*
-  Sets the unicode_char type to be at least 32 bits
+  Sets the unicode_char type to be at least 32 bits.
+
+  Small buffer index is used on operations for example
+  when finding the size of an attribute name or value.
+
+  Unicode character variations is a type containing
+  indexes to arrays containing different types of
+  unicode characters, for example for comparisons.
 */
 
 #if UINT_MAX >= 0x1FFFFF
 typedef unsigned int unicode_char;
+typedef unsigned int small_buffer_index;
+typedef unsigned int unicode_character_variations;
 #else
 typedef unsigned long unicode_char;
+typedef unsigned long small_buffer_index;
+typedef unsigned long unicode_character_variations;
 #endif
 
 /*

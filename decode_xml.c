@@ -48,7 +48,8 @@ __inline__ unicode_char read_unicode_character(unsigned char* buffer,
   return result;
 }
 
-__inline__ int is_equal_character(char* buffer, source_buffer_index offset) {
+__inline__ unicode_char is_equal_character(char* buffer,
+					   source_buffer_index offset) {
   return read_unicode_character(buffer, offset) == 0x003D;
 }
 
@@ -83,6 +84,12 @@ __inline__ int compare_unicode_character(char* buffer,
     return -1;
 }
 
+/*
+  Function that compares given position in buffer to an array
+  of unicode characters.  The array is terminated by 0.
+
+  FIXME, figure out what to do if array is empty.
+ */
 __inline__ int compare_unicode_character_array(char* buffer,
 					       source_buffer_index offset,
 					       unicode_char* compare_to) {
@@ -156,6 +163,8 @@ __inline__ source_buffer_index run_whitespace(char* buffer,
   for the terminating single or double quote.
 
   Returns the position of the single or double quote.
+
+  FIXME, figure out what to do if attribute is empty.
 */
 __inline__ source_buffer_index run_attribute_value(char* buffer,
 						   source_buffer_index offset,
@@ -166,7 +175,7 @@ __inline__ source_buffer_index run_attribute_value(char* buffer,
   printf("In run_attribute_value\n");
   printf("Quote: %c\n", (char) end_quote);
   #endif
- do {
+  do {
     character = read_unicode_character(buffer, offset+index);
     #ifdef DEBUG
     printf("Character: %c\n", (char) character);
@@ -195,7 +204,12 @@ __inline__ source_buffer_index run_attribute_value(char* buffer,
   } while (1);
   }
 
-/* Returns 0 if strings are similar */
+/*
+  Functions that compares buffer to a unicode string,
+  returns 0 if strings are similar, 1 if buffer has
+  a bigger character and -1 if compare_to has a bigger
+  character.
+*/
 __inline__ int compare_unicode_string(char* buffer,
 				      source_buffer_index offset,
 				      unicode_char* compare_to) {
@@ -230,10 +244,10 @@ __inline__ int compare_unicode_string(char* buffer,
   Function that searches for a given unicode string, a
   return value of >= 0 indicates success
 
-  FIXME size of long on large buffer
+  FIXME size of long on large buffer, negative return value.
 */
-__inline__ long run_unicode_string(char* buffer, source_buffer_index offset,
-				   unicode_char* compare_to) {
+__inline__ int run_unicode_string(char* buffer, source_buffer_index offset,
+		       unicode_char* compare_to) {
   int index = 0;
   unicode_char character = 0;
   do {
@@ -256,11 +270,15 @@ __inline__ long run_unicode_string(char* buffer, source_buffer_index offset,
   } while (1);  
 }
 
+/*
+
+  Function that validates the Unicode characters in
+  a string.  A return value of 0 indicates success.
+
+  Starts at position 1, after the BOM.
+*/
+
 int validate_unicode_xml_1(char* buffer, int length) {
-  /*
-    Validates an XML buffer as if it had been read from
-    the filesystem, with a 4 byte BOM at the beginning
-  */
   unicode_char character = 0;
   int counter = 1;
   for (; counter < length; counter += 1) {
@@ -288,6 +306,13 @@ int validate_unicode_xml_1(char* buffer, int length) {
   }
   return 0;
 }
+
+/*
+
+  Returns 1 if character at offset is a valid character
+  to start an element or attribute name.
+
+*/
 
 __inline__ int is_name_start_character(char* buffer,
 				       source_buffer_index offset) {
@@ -317,6 +342,13 @@ __inline__ int is_name_start_character(char* buffer,
   }
   return 0;
 }
+
+/*
+
+  Returns 1 if character at offset is a valid character
+  in an element or attribute name.
+
+*/
 
 __inline__ int is_name_character(char* buffer, source_buffer_index offset) {
   if (is_name_start_character(buffer, offset)) {
@@ -348,10 +380,11 @@ __inline__ int is_name_character(char* buffer, source_buffer_index offset) {
   Function that parses an attribute name and returns a
   status value or the size.
 */
-__inline__ int run_attribute_name(char* buffer, source_buffer_index position,
-				  unicode_char **attribute) {
+__inline__ small_buffer_index run_attribute_name\
+    (char* buffer, source_buffer_index position,
+     unicode_char **attribute) {
   if (!is_name_start_character(buffer, position)) {
-    return -1;
+    return 0;
   }
   unicode_char *attribute_storage = malloc(sizeof(unicode_char)*
 					   MAXIMUM_NAME_SIZE);
