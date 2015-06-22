@@ -23,10 +23,12 @@
 typedef unsigned int unicode_char;
 typedef unsigned int small_buffer_index;
 typedef unsigned int unicode_character_variations;
+#define UNICODE_CHAR_MAX UINT_MAX
 #else
 typedef unsigned long unicode_char;
 typedef unsigned long small_buffer_index;
 typedef unsigned long unicode_character_variations;
+#define UNICODE_CHAR_MAX ULONG_MAX
 #endif
 
 /*

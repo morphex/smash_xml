@@ -19,7 +19,7 @@ int main() {
   file = fopen("test.xml", "rb+");
   read = fread(buffer, sizeof(char), 1023*2, file);
   if (read < 1300) {
-    HANDLE_ERROR("test.xml less than %l bytes\n", read);
+    HANDLE_ERROR("test.xml less than %lu bytes\n", read);
   }
   /*
     FIXME, linked lists or something similar,
@@ -30,7 +30,7 @@ int main() {
     HANDLE_ERROR("BOM not found", 0)
   }
   if (!is_valid_stream(read)) {
-    HANDLE_ERROR("Invalid Unicode stream, read %l bytes", read)
+    HANDLE_ERROR("Invalid Unicode stream, read %lu bytes", read)
   }
   if (read_unicode_character(buffer, 1) != 0x3c) {
     HANDLE_ERROR("Expected < at position 1", 0)
@@ -80,35 +80,39 @@ int main() {
     }            
     #endif
   }
-  /* Whitespace test */
+  /* Whitespace tests */
   {
     source_buffer_index index = 0;
     index = run_whitespace(buffer, 291);
     if (index != 300) {
       HANDLE_ERROR("Expected position 300, got %i", index)
     }
+
+    if (!is_whitespace(buffer, 20)) {
+      HANDLE_ERROR("Expected whitespace at position 20", 0)
+    }
   }
   /* Equal sign test */
   {
     unicode_char equal_sign = read_unicode_character(buffer, 28+1);
     if (equal_sign != EQUAL_CHARACTER) {
-      HANDLE_ERROR("Expected equal sign at position 29, got %lx", equal_sign)
+      HANDLE_ERROR("Expected equal sign at position 29, got %lu", equal_sign)
     }
   }
   /* Attribute reading tests */
   {
     unicode_char attribute_start = read_unicode_character(buffer, 361+1);
     if (attribute_start != SINGLE_QUOTE) {
-      HANDLE_ERROR("Expected single quote at position 362, got %lx",
+      HANDLE_ERROR("Expected single quote at position 362, got %lu",
 		   attribute_start)
     }
     source_buffer_index attribute_stop = 0;
     attribute_stop = run_attribute_value(buffer, 363, attribute_start);
     if (attribute_stop != 375) {
-      HANDLE_ERROR("Expected position 375, got position %lx", attribute_stop)
+      HANDLE_ERROR("Expected position 375, got position %lu", attribute_stop)
     }
   }
-  /* Compare and search tests */
+  /* Compare tests */
   {
     unicode_char a_with_ring = read_unicode_character(buffer, 76+1);
     int compare_result = compare_unicode_character(buffer,
@@ -127,8 +131,38 @@ int main() {
 					       383,
 					       a_with_ring);
     if (compare_result != -1) {
-      HANDLE_ERROR("Expected 0 on compare, got %i", compare_result)
+      HANDLE_ERROR("Expected -1 on compare, got %i", compare_result)
     }
+
+    /* ?xml<\0 */
+    unicode_char compare_to[] = {0x3f,0x78,0x6d,0x6c,0x3c,0x00};
+    compare_result = compare_unicode_character_array(buffer, 1,
+						     compare_to);
+    if (!(compare_result >= 4)) {
+      HANDLE_ERROR("Expected %i or greater on compare array, got %i", 4,
+		   compare_result)
+    }
+
+    /* <?xml\0 */
+    unicode_char compare_to2[] = {0x3c,0x3f,0x78,0x6d,0x6c,0x00};
+    compare_result = compare_unicode_string(buffer, 1, compare_to2);
+    if (!(compare_result >= 0)) {
+      HANDLE_ERROR("Expected %i or greater on compare array, got %i", 0,
+		   compare_result)
+    }
+  }
+  /* Search test */
+  /* FIXME segmentation violation and other unicode char arrays */
+  if (0)
+  {
+    unicode_char *compare_to3 = malloc(sizeof(unicode_char)*3);
+    printf("compare_to3: %s\n", compare_to3[1]);
+    /*
+    source_buffer_index search_result = run_unicode_string(buffer,
+							   0,
+							   compare_to3);
+    printf("Search result: %i\n", search_result);
+    */
   }
   {
     short *s = NULL;

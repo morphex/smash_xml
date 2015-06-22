@@ -117,7 +117,8 @@ __inline__ int compare_unicode_character_array(char* buffer,
 	     character, current_comparison);
       #endif
       index++;
-      character = read_unicode_character(buffer, offset+index);
+      /* Aj aj aj */
+      /* character = read_unicode_character(buffer, offset+index); */
     }
   }
   /* Nothing found, return -1 */
@@ -205,6 +206,28 @@ __inline__ source_buffer_index run_attribute_value(char* buffer,
   }
 
 /*
+  Functions that returns the length of a string
+*/
+
+__inline__ source_buffer_index get_length(char* string) {
+  source_buffer_index index = 0;
+  for (; index < UNICODE_CHAR_MAX; index+=4) {
+    if (string[index] == 0) {
+	return index + 1;
+      }
+  }
+}
+
+__inline__ source_buffer_index get_length_unicode(unicode_char* string) {
+  source_buffer_index index = 0;
+  for (; index < UNICODE_CHAR_MAX; index++) {
+    if (string[index] == 0) {
+	return index + 1;
+      }
+  }
+}
+
+/*
   Functions that compares buffer to a unicode string,
   returns 0 if strings are similar, 1 if buffer has
   a bigger character and -1 if compare_to has a bigger
@@ -214,61 +237,54 @@ __inline__ int compare_unicode_string(char* buffer,
 				      source_buffer_index offset,
 				      unicode_char* compare_to) {
   source_buffer_index index = 0;
-  unicode_char buffer_character = read_unicode_character(buffer, offset);
-  unicode_char compare_to_character = compare_to[0];
-  while (buffer_character != 0 && compare_to_character != 0) {
-    if (buffer_character == compare_to_character) {
-      index++;
-      buffer_character = read_unicode_character(buffer, offset+index);
-      compare_to_character = compare_to[index];
+  unicode_char buffer_character = 0;
+
+  for (;; index++) {
+    printf("Compare loop %s\n", compare_to);
+    if (compare_to[index] == 0x00) {
+      /* Found terminating character, success */
+      printf("Found terminating character\n");
+      return 0;
+    }
+    buffer_character = read_unicode_character(buffer, offset+index);
+    if (buffer_character == compare_to[index]) {
       continue;
-    }
-    if (buffer_character > compare_to_character) {
-      #ifdef DEBUG
-      printf("index: %lx\n", index);
-      printf("buffer_character %lx - compare_to_character %lx",
-	     buffer_character, compare_to_character);
-      #endif
+    } else if (buffer_character > compare_to[index]) {
       return 1;
-    }
-    if (buffer_character < compare_to_character)
+    } else if (buffer_character < compare_to[index]) {
       return -1;
+    }
   }
-  /* In case we run out of buffer */
-  if (buffer_character == 0)
-    return -1;
-  return 0;
 }
 
 /*
   Function that searches for a given unicode string, a
-  return value of >= 0 indicates success
+  return value of > 0 indicates success
 
-  FIXME size of long on large buffer, negative return value.
+  Assumes at least 1 Unicode character in buffer.
 */
-__inline__ int run_unicode_string(char* buffer, source_buffer_index offset,
-		       unicode_char* compare_to) {
+__inline__ source_buffer_index run_unicode_string\
+                (char* buffer, source_buffer_index offset,
+		 unicode_char* compare_to) {
   int index = 0;
   unicode_char character = 0;
-  do {
+  for (;; index++) {
     character = read_unicode_character(buffer, offset+index);
-    #ifdef DEBUG
-    printf("Search loop: %lx %lx\n", offset+index, character);
-    #endif
-    if (character == 0) {
-      return -1;
+    /*#ifdef DEBUG*/
+    printf("Search loop: %lx -- %c\n", offset+index, character);
+    /*#endif*/
+    if (character == 0x00) {
+      return 0;
     } else if (character == compare_to[0]) {
-      #ifdef DEBUG
-      printf("\tFound matching character\n");
-      #endif
-      if (!compare_unicode_string(buffer, offset+index, compare_to)) {
+      /* #ifdef DEBUG */
+      printf("\tFound matching character at %i\n", index);
+      /* #endif */
+      if (!compare_unicode_string(buffer, offset, compare_to) == 0) {
 	  return offset + index;
       }
     }
-    index++;
-    continue;
-  } while (1);  
-}
+  }
+}  
 
 /*
 
