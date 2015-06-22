@@ -7,6 +7,8 @@
   sprintf(buffer, _message, __VA_ARGS__);\
   _handle_error(buffer);
 
+#define READ_BYTES 1024*1024*100
+
 void _handle_error(unsigned char *message) {
   printf("Error: %s\n", message);
 }
@@ -14,10 +16,10 @@ void _handle_error(unsigned char *message) {
 int main() {
   char *buffer = NULL;
   unsigned long read = 0;
-  buffer = malloc(1024*sizeof(char));
+  buffer = malloc(READ_BYTES);
   FILE *file = NULL;
   file = fopen("test.xml", "rb+");
-  read = fread(buffer, sizeof(char), 1023*2, file);
+  read = fread(buffer, sizeof(char), READ_BYTES, file);
   if (read < 1300) {
     HANDLE_ERROR("test.xml less than %lu bytes\n", read);
   }
@@ -70,15 +72,15 @@ int main() {
 
     quote = read_unicode_character(buffer, 206);
     result3 = run_attribute_value(buffer, 207, quote);
-    #ifndef TOLERATE_MINOR_ERRORS
+#ifndef TOLERATE_MINOR_ERRORS
     if (result3 != 0) {
       HANDLE_ERROR("Expected position 0 (failure), got position %i", result3)
     }
-    #else
+#else
     if (result3 != 211) {
       HANDLE_ERROR("Expected position 211, got position %i", result3)
     }            
-    #endif
+#endif
   }
   /* Whitespace tests */
   {
@@ -152,17 +154,16 @@ int main() {
     }
   }
   /* Search test */
-  /* FIXME segmentation violation and other unicode char arrays */
-  if (0)
   {
-    unicode_char *compare_to3 = malloc(sizeof(unicode_char)*3);
-    printf("compare_to3: %s\n", compare_to3[1]);
-    /*
+    unicode_char compare_to3[] = {0x2d,0x2d,0x3e,0x00};
+    printf("Test: %s", &compare_to3);
     source_buffer_index search_result = run_unicode_string(buffer,
 							   0,
-							   compare_to3);
-    printf("Search result: %i\n", search_result);
-    */
+							   &compare_to3);
+    if (search_result != 288) {
+      HANDLE_ERROR("Expected to find result at position %lx, got %lx",
+		   288, search_result)
+    }
   }
   {
     short *s = NULL;

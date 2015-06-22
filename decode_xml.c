@@ -240,10 +240,14 @@ __inline__ int compare_unicode_string(char* buffer,
   unicode_char buffer_character = 0;
 
   for (;; index++) {
+#ifdef DEBUG
     printf("Compare loop %s\n", compare_to);
+#endif
     if (compare_to[index] == 0x00) {
       /* Found terminating character, success */
+#ifdef DEBUG
       printf("Found terminating character\n");
+#endif
       return 0;
     }
     buffer_character = read_unicode_character(buffer, offset+index);
@@ -266,20 +270,20 @@ __inline__ int compare_unicode_string(char* buffer,
 __inline__ source_buffer_index run_unicode_string\
                 (char* buffer, source_buffer_index offset,
 		 unicode_char* compare_to) {
-  int index = 0;
+  int index = 1;
   unicode_char character = 0;
   for (;; index++) {
     character = read_unicode_character(buffer, offset+index);
-    /*#ifdef DEBUG*/
-    printf("Search loop: %lx -- %c\n", offset+index, character);
-    /*#endif*/
+    #ifdef DEBUG
+    printf("Position %lx Char %lx %c\n", offset+index, character, (char) character);
+    #endif
     if (character == 0x00) {
       return 0;
     } else if (character == compare_to[0]) {
-      /* #ifdef DEBUG */
+      #ifdef DEBUG
       printf("\tFound matching character at %i\n", index);
-      /* #endif */
-      if (!compare_unicode_string(buffer, offset, compare_to) == 0) {
+      #endif
+      if (compare_unicode_string(buffer, offset+index, compare_to) == 0) {
 	  return offset + index;
       }
     }
