@@ -41,6 +41,8 @@ typedef unsigned long source_buffer_index;
 #define SINGLE_QUOTE 0x27
 #define DOUBLE_QUOTE 0x22
 
+#define EQUAL_CHARACTER 0x3d
+
 /*
   Whether to be tolerant to minor errors in XML markup.
 

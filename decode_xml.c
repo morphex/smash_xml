@@ -42,6 +42,9 @@ __inline__ unicode_char read_unicode_character(unsigned char* buffer,
   unicode_char result = (buffer[(offset*UNICODE_STORAGE_BYTES)+2] << 16) +
     (buffer[(offset*UNICODE_STORAGE_BYTES)+1] << 8) +
     buffer[(offset*UNICODE_STORAGE_BYTES)+0];
+  #ifdef DEBUG
+  printf("Char: %lx\t", result);
+  #endif
   return result;
 }
 

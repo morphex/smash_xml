@@ -13,6 +13,9 @@ struct message_linked_list {
 struct message_linked_list* create_message_linked_list() {
     struct message_linked_list *mll = (struct message_linked_list*)\
       malloc(sizeof(struct message_linked_list));
+    if (mll == NULL) {
+      return NULL;
+    }
     memset(mll->data, 0, BUFFER_SIZE);
     mll->is_last = 0;
     mll->next = NULL;

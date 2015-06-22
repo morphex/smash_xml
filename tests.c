@@ -16,8 +16,11 @@ int main() {
   unsigned long read = 0;
   buffer = malloc(1024*sizeof(char));
   FILE *file = NULL;
-  file = fopen("test.xml.2", "rb+");
-  read = fread(buffer, sizeof(char), 1023, file);
+  file = fopen("test.xml", "rb+");
+  read = fread(buffer, sizeof(char), 1023*2, file);
+  if (read < 1300) {
+    HANDLE_ERROR("test.xml less than %l bytes\n", read);
+  }
   /*
     FIXME, linked lists or something similar,
     terminating character.
@@ -76,6 +79,56 @@ int main() {
       HANDLE_ERROR("Expected position 211, got position %i", result3)
     }            
     #endif
+  }
+  /* Whitespace test */
+  {
+    source_buffer_index index = 0;
+    index = run_whitespace(buffer, 291);
+    if (index != 300) {
+      HANDLE_ERROR("Expected position 300, got %i", index)
+    }
+  }
+  /* Equal sign test */
+  {
+    unicode_char equal_sign = read_unicode_character(buffer, 28+1);
+    if (equal_sign != EQUAL_CHARACTER) {
+      HANDLE_ERROR("Expected equal sign at position 29, got %lx", equal_sign)
+    }
+  }
+  /* Attribute reading tests */
+  {
+    unicode_char attribute_start = read_unicode_character(buffer, 361+1);
+    if (attribute_start != SINGLE_QUOTE) {
+      HANDLE_ERROR("Expected single quote at position 362, got %lx",
+		   attribute_start)
+    }
+    source_buffer_index attribute_stop = 0;
+    attribute_stop = run_attribute_value(buffer, 363, attribute_start);
+    if (attribute_stop != 375) {
+      HANDLE_ERROR("Expected position 375, got position %lx", attribute_stop)
+    }
+  }
+  /* Compare and search tests */
+  {
+    unicode_char a_with_ring = read_unicode_character(buffer, 76+1);
+    int compare_result = compare_unicode_character(buffer,
+						   120+1,
+						   a_with_ring);
+    if (compare_result != 1) {
+      HANDLE_ERROR("Expected 1 on compare, got %i", compare_result)
+    }
+    compare_result = compare_unicode_character(buffer,
+					       377,
+					       a_with_ring);
+    if (compare_result != 0) {
+      HANDLE_ERROR("Expected 0 on compare, got %i", compare_result)
+    }
+    compare_result = compare_unicode_character(buffer,
+					       383,
+					       a_with_ring);
+    if (compare_result != -1) {
+      HANDLE_ERROR("Expected 0 on compare, got %i", compare_result)
+    }
   }
   {
     short *s = NULL;
