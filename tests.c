@@ -15,7 +15,7 @@ void _handle_error(unsigned char *message) {
 
 int main() {
   char *buffer = NULL;
-  unsigned long read = 0;
+  source_buffer_index read = 0;
   buffer = malloc(READ_BYTES);
   FILE *file = NULL;
   file = fopen("test.xml", "rb+");
@@ -24,10 +24,11 @@ int main() {
     HANDLE_ERROR("test.xml less than %lu bytes\n", read);
   }
   /*
-    FIXME, linked lists or something similar,
-    terminating character.
+    FIXME, linked lists or something similar.
   */
-  buffer[read] = 0x00; 
+  /*printf("read: %i\n", read);*/
+  buffer[read] = 0x00; buffer[read+1] = 0x00;
+  buffer[read+2] = 0x00; buffer[read+3] = 0x00;
   if (!is_valid_bom(buffer)) {
     HANDLE_ERROR("BOM not found", 0)
   }
@@ -82,6 +83,8 @@ int main() {
     }            
 #endif
   }
+  /* Tests of run_attribute_name - FIXME */
+
   /* Whitespace tests */
   {
     source_buffer_index index = 0;
@@ -141,7 +144,7 @@ int main() {
     compare_result = compare_unicode_character_array(buffer, 1,
 						     compare_to);
     if (!(compare_result >= 4)) {
-      HANDLE_ERROR("Expected %i or greater on compare array, got %i", 4,
+      HANDLE_ERROR("Expected %i or greater on compare array 1, got %i", 4,
 		   compare_result)
     }
 
@@ -149,14 +152,13 @@ int main() {
     unicode_char compare_to2[] = {0x3c,0x3f,0x78,0x6d,0x6c,0x00};
     compare_result = compare_unicode_string(buffer, 1, compare_to2);
     if (!(compare_result >= 0)) {
-      HANDLE_ERROR("Expected %i or greater on compare array, got %i", 0,
+      HANDLE_ERROR("Expected %i or greater on compare array 2, got %i", 0,
 		   compare_result)
     }
   }
   /* Search test */
   {
     unicode_char compare_to3[] = {0x2d,0x2d,0x3e,0x00};
-    printf("Test: %s", &compare_to3);
     source_buffer_index search_result = run_unicode_string(buffer,
 							   0,
 							   &compare_to3);
@@ -164,6 +166,28 @@ int main() {
       HANDLE_ERROR("Expected to find result at position %lx, got %lx",
 		   288, search_result)
     }
+  }
+  /* Slice and length tests */
+  if (1) {
+    source_buffer_index length = get_length(buffer);
+    if (length != 1600) {
+      HANDLE_ERROR("Expected length of 1600, got %ll", length)
+    }
+    unicode_char *attribute = NULL;
+    unicode_char_length end = 0;
+    end = run_attribute_value(buffer, 363, SINGLE_QUOTE);
+    if (end != 375) {
+      HANDLE_ERROR("Expected end at 375, got %ll", end)
+    }
+    slice_string(buffer, (unicode_char_length) 363, end-1, &attribute);
+    print_unicode(attribute);
+    length = get_length_unicode(attribute);
+    if (length != 12) {
+      HANDLE_ERROR("Expected length of 12, got %ll", length)
+    }
+    free(attribute);
+    attribute = NULL;
+
   }
   {
     short *s = NULL;

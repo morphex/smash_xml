@@ -32,10 +32,35 @@ typedef unsigned long unicode_character_variations;
 #endif
 
 /*
+  Sets the integer size to the smallest, but
+  fastest possible.
+
+  If in theory on an 8-bit system with a >= c99
+  compiler, it should only use an integer that's
+  8 bits.
+
+  Used on functions for example that return a
+  small range of integer values.
+*/
+
+#if __STDC_VERSION__ < 199901L
+typedef int small_fast_int;
+typedef unsigned int small_fast_unsigned_int; 
+#else
+typedef int_fast8_t small_fast_int; 
+typedef uint_fast8_t small_fast_unsigned_int;
+#endif
+
+/*
   The indexes used to work on the source buffer.  Can also be
   used as offset+index where both are source_buffer_index.
 */
 typedef unsigned long source_buffer_index;
+
+/*
+  The type used to work with sizes of unicode_char strings.
+*/
+typedef unsigned long unicode_char_length;
 
 /*
   Maximum element or attribute name size is 4 MB
@@ -55,6 +80,8 @@ typedef unsigned long source_buffer_index;
 #define DOUBLE_QUOTE 0x22
 
 #define EQUAL_CHARACTER 0x3d
+
+#define UNICODE_NULL (unicode_char) 0
 
 /*
   Whether to be tolerant to minor errors in XML markup.

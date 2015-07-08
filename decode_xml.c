@@ -160,6 +160,63 @@ __inline__ source_buffer_index run_whitespace(char* buffer,
 }
 
 /*
+  Prints unicode_char array.
+*/
+void print_unicode(const unicode_char* buffer) {
+  printf("print_unicode:\n", buffer);
+  unicode_char_length index = 0;
+  while (buffer[index] != 0) {
+    printf("%lx", buffer[index]);
+    printf("%c,", (char) buffer[index]);
+    index++;
+  }
+  #ifdef DEBUG
+  printf("\nindex %i\n", index);
+  #endif
+  printf("\nend print_unicode\n", buffer);
+}
+
+/*
+  Gets a unicode char string from a character array.
+
+  String terminated by NULL.
+
+  Returns length of actual slice.
+*/
+
+__inline__ unicode_char_length slice_string(char* buffer,
+					    unicode_char_length start,
+					    unicode_char_length stop,
+					    unicode_char **slice) {
+  unicode_char_length size = stop - start;
+  unicode_char_length allocate_bytes = (size + 2) * UNICODE_STORAGE_BYTES;
+  unicode_char *local_slice = malloc(allocate_bytes);
+  if (local_slice == 0) {
+    return 0;
+  }
+  unicode_char_length slice_index = 0;
+  for (; start <= stop; start++) {
+    unicode_char character = read_unicode_character(buffer, start);
+    #ifdef DEBUG
+    printf("1 loop %c\t", (char)character);
+    #endif
+    /* Found NULL before reaching 'stop', maybe realloc? */
+    if (character == 0) {
+      break;
+    }
+    local_slice[slice_index] = character;
+    slice_index++;
+  }
+  local_slice[slice_index] = UNICODE_NULL;
+  *slice = local_slice;
+  #ifdef DEBUG
+  printf("\nSlice index: %i,allocate_bytes %i\n", slice_index, allocate_bytes);
+  #endif
+  return slice_index;
+}
+						  
+
+/*
   Function that runs through an attribute value, looking
   for the terminating single or double quote.
 
@@ -206,23 +263,29 @@ __inline__ source_buffer_index run_attribute_value(char* buffer,
   }
 
 /*
-  Functions that returns the length of a string
+  Functions that returns the length of a string.
+
+  First function returns Unicode character * UNICODE_STORAGE_BYTES
+
+  Second function returns number of Unicode characters
 */
 
 __inline__ source_buffer_index get_length(char* string) {
   source_buffer_index index = 0;
   for (; index < UNICODE_CHAR_MAX; index+=4) {
-    if (string[index] == 0) {
-	return index + 1;
-      }
+    if (string[index] == 0 && string[index+1] == 0 &&
+	string[index+2] == 0 && string[index+3] == 0) {
+	return index;
+    }
   }
+  /* FIXME, EOS not found, error */
 }
 
 __inline__ source_buffer_index get_length_unicode(unicode_char* string) {
   source_buffer_index index = 0;
   for (; index < UNICODE_CHAR_MAX; index++) {
     if (string[index] == 0) {
-	return index + 1;
+	return index;
       }
   }
 }
@@ -448,8 +511,9 @@ __inline__ small_buffer_index run_attribute_name\
       #ifdef DEBUG
       printf("Success, reallocating memory..\n");
       #endif
+      attribute_storage[index+1] = 0x00;
       attribute_storage = realloc(attribute_storage,
-				  sizeof(unicode_char)*index);
+				  (sizeof(unicode_char)*index)+1);
       if (attribute_storage == NULL) {
 	return 0;
       }

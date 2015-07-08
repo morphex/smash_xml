@@ -9,3 +9,6 @@ test.xml.2.bak
 *.c#
 *.2~
 *.xml~
+*.exe~
+Makefile~
+test.xml.toc.bz2
