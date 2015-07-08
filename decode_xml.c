@@ -511,9 +511,9 @@ __inline__ small_buffer_index run_attribute_name\
       #ifdef DEBUG
       printf("Success, reallocating memory..\n");
       #endif
-      attribute_storage[index+1] = 0x00;
+      attribute_storage[index+1] = UNICODE_NULL;
       attribute_storage = realloc(attribute_storage,
-				  (sizeof(unicode_char)*index)+1);
+				  (sizeof(unicode_char)*(index+1)));
       if (attribute_storage == NULL) {
 	return 0;
       }

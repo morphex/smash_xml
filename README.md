@@ -11,3 +11,8 @@ cross-platform libraries.
 
 If you're compiling Smash XML on an unusual system, remember to run
 the test-suite before using it in development or production.
+
+** To-do **
+
+Add (contrived) tests to check that it isn't possible to overrun any
+buffers.
