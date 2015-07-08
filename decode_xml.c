@@ -142,8 +142,7 @@ __inline__ source_buffer_index run_whitespace(char* buffer,
   source_buffer_index index = 0;
   unicode_char character = 0;
   do {
-    character = read_unicode_character(buffer,
-				       offset+(index*UNICODE_STORAGE_BYTES));
+    character = read_unicode_character(buffer, offset+index);
     #ifdef DEBUG
     printf("run_whitespace character: %lx\n", character);
     #endif
@@ -263,9 +262,9 @@ __inline__ source_buffer_index run_attribute_value(char* buffer,
   }
 
 /*
-  Functions that returns the length of a string.
-
-  First function returns Unicode character * UNICODE_STORAGE_BYTES
+  Functions that returns the length of a unicode
+  string stored as characters, return the number
+  of characters used.
 
   Second function returns number of Unicode characters
 */
@@ -338,7 +337,8 @@ __inline__ source_buffer_index run_unicode_string\
   for (;; index++) {
     character = read_unicode_character(buffer, offset+index);
     #ifdef DEBUG
-    printf("Position %lx Char %lx %c\n", offset+index, character, (char) character);
+    printf("Position %lx Char %lx %c\n", offset+index, character,
+	   (char) character);
     #endif
     if (character == 0x00) {
       return 0;
@@ -550,5 +550,3 @@ int is_valid_stream(source_buffer_index read) {
     }
     return 1;
 }
-
-

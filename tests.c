@@ -50,6 +50,11 @@ int main() {
     if ((char) result2 != 'v') {
       HANDLE_ERROR("Expected character v at position 7", 0)
     }
+    result = run_whitespace(buffer, 291);
+    result2 = read_unicode_character(buffer, result);
+    if ((char) result2 != '<') {
+      HANDLE_ERROR("Expected character < at position %i", result)
+    }
   }
   /* Tests of run_attribute_value */
   {
