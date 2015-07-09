@@ -92,3 +92,11 @@ typedef unsigned long unicode_char_length;
 /*
 #define TOLERATE_MINOR_ERRORS
 */
+
+/*
+
+  Used to make const optional, for calculating speed gains
+  of using const.
+
+ */
+#define CONST const

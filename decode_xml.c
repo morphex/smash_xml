@@ -10,35 +10,37 @@
 
   The 0 is a sign to stop this string
 */
-unicode_char pi_start[3] = {0x003c, 0x003f, 0x0};
+CONST unicode_char pi_start[3] = {0x003c, 0x003f, 0x0};
 /* The Unicode version of ?> */
-unicode_char pi_stop[3] = {0x003f, 0x003e, 0x0};
+CONST unicode_char pi_stop[3] = {0x003f, 0x003e, 0x0};
 /*
   XML identifier, for indentifying the beginning
   (X|x)(M|m)(L|l) processing instruction
 */
-unicode_char xml_pi_x[3] = {0x0078, 0x0058, 0x0};
-unicode_char xml_pi_m[3] = {0x006d, 0x004d, 0x0};
-unicode_char xml_pi_l[3] = {0x006c, 0x004c, 0x0};
+CONST unicode_char xml_pi_x[3] = {0x0078, 0x0058, 0x0};
+CONST unicode_char xml_pi_m[3] = {0x006d, 0x004d, 0x0};
+CONST unicode_char xml_pi_l[3] = {0x006c, 0x004c, 0x0};
 /*
   The single characters that can be a at the
   start of an attribute name: ":" | "_"
 */
-unicode_char name_start_character_single_characters[] = {0x003A, 0x005F, 0x00};
+CONST unicode_char name_start_character_single_characters[] = \
+  {0x003A, 0x005F, 0x00};
 /*
   The single characters that can be a part of
   an attribute name: "-" | "." | 0x00B7
 */
-unicode_char name_character_single_characters[] = {0x002D, 0x002E, 0x00B7,
-						   0x00};
+CONST unicode_char name_character_single_characters[] = \
+  {0x002D, 0x002E, 0x00B7, 0x00};
 
 /*
   The &amp; escape without the prepending &, in other words amp;
 */
-unicode_char ampersand_escape_without_ampersand[] = {0x61,0x6d,0x70,0x3b,0x00};
+CONST unicode_char ampersand_escape_without_ampersand[] = \
+  {0x61,0x6d,0x70,0x3b,0x00};
 
-__inline__ unicode_char read_unicode_character(unsigned char* buffer,
-					       long offset) {
+__inline__ unicode_char read_unicode_character(CONST unsigned char* buffer,
+					       CONST long offset) {
   unicode_char result = (buffer[(offset*UNICODE_STORAGE_BYTES)+2] << 16) +
     (buffer[(offset*UNICODE_STORAGE_BYTES)+1] << 8) +
     buffer[(offset*UNICODE_STORAGE_BYTES)+0];
@@ -48,8 +50,8 @@ __inline__ unicode_char read_unicode_character(unsigned char* buffer,
   return result;
 }
 
-__inline__ unicode_char is_equal_character(char* buffer,
-					   source_buffer_index offset) {
+__inline__ unicode_char is_equal_character(CONST char* buffer,
+					   CONST source_buffer_index offset) {
   return read_unicode_character(buffer, offset) == 0x003D;
 }
 
@@ -58,8 +60,8 @@ __inline__ unicode_char is_equal_character(char* buffer,
 
   Returns uint 0x22 for " and 0x27 for '
 */
-__inline__ unicode_char is_attribute_value_start(char* buffer,
-						 source_buffer_index offset) {
+__inline__ unicode_char is_attribute_value_start(CONST char* buffer,
+					 CONST source_buffer_index offset) {
   unicode_char character = read_unicode_character(buffer, offset);
   if (character == 0x22 || character == 0x27) {
     return character;
@@ -69,9 +71,9 @@ __inline__ unicode_char is_attribute_value_start(char* buffer,
 }
 
 /* Returns 0 if strings are similar */
-__inline__ int compare_unicode_character(char* buffer,
-					 source_buffer_index offset,
-					 unicode_char compare_to) {
+__inline__ int compare_unicode_character(CONST char* buffer,
+					 CONST source_buffer_index offset,
+					 CONST unicode_char compare_to) {
   unicode_char character = read_unicode_character(buffer, offset);
   #ifdef DEBUG
   printf("compare_unicode_character: %lx - %lx\n", character, compare_to);
@@ -90,9 +92,9 @@ __inline__ int compare_unicode_character(char* buffer,
 
   FIXME, figure out what to do if array is empty.
  */
-__inline__ int compare_unicode_character_array(char* buffer,
-					       source_buffer_index offset,
-					       unicode_char* compare_to) {
+__inline__ int compare_unicode_character_array(CONST char* buffer,
+					CONST source_buffer_index offset,
+					CONST unicode_char* compare_to) {
   int index = 0;
   unicode_char character = read_unicode_character(buffer, offset);
   unicode_char current_comparison;
@@ -126,7 +128,8 @@ __inline__ int compare_unicode_character_array(char* buffer,
 }
 
 /* Function that returns true if character at offset is whitespace */
-__inline__ int is_whitespace(char* buffer, long offset) {
+__inline__ int is_whitespace(CONST char* buffer,
+			     CONST source_buffer_index offset) {
   unicode_char character = read_unicode_character(buffer, offset);
   return character == 0x0020 || character == 0x0009 || character == 0x000D ||
     character == 0x000A;
@@ -137,8 +140,8 @@ __inline__ int is_whitespace(char* buffer, long offset) {
   characters.  When a non-whitespace character is found,
   returns the position.
 */
-__inline__ source_buffer_index run_whitespace(char* buffer,
-					      source_buffer_index offset) {
+__inline__ source_buffer_index run_whitespace(CONST char* buffer,
+				      CONST source_buffer_index offset) {
   source_buffer_index index = 0;
   unicode_char character = 0;
   do {
@@ -161,7 +164,7 @@ __inline__ source_buffer_index run_whitespace(char* buffer,
 /*
   Prints unicode_char array.
 */
-void print_unicode(const unicode_char* buffer) {
+void print_unicode(CONST unicode_char* buffer) {
   printf("print_unicode:\n", buffer);
   unicode_char_length index = 0;
   while (buffer[index] != 0) {
@@ -183,9 +186,9 @@ void print_unicode(const unicode_char* buffer) {
   Returns length of actual slice.
 */
 
-__inline__ unicode_char_length slice_string(char* buffer,
+__inline__ unicode_char_length slice_string(CONST char* buffer,
 					    unicode_char_length start,
-					    unicode_char_length stop,
+					    CONST unicode_char_length stop,
 					    unicode_char **slice) {
   unicode_char_length size = stop - start;
   unicode_char_length allocate_bytes = (size + 2) * UNICODE_STORAGE_BYTES;
@@ -223,9 +226,9 @@ __inline__ unicode_char_length slice_string(char* buffer,
 
   FIXME, figure out what to do if attribute is empty.
 */
-__inline__ source_buffer_index run_attribute_value(char* buffer,
-						   source_buffer_index offset,
-						   unicode_char end_quote) {
+__inline__ source_buffer_index run_attribute_value(CONST char* buffer,
+					CONST source_buffer_index offset,
+					CONST unicode_char end_quote) {
   int index = 0;
   unicode_char character = 0;
   #ifdef DEBUG
@@ -259,7 +262,7 @@ __inline__ source_buffer_index run_attribute_value(char* buffer,
     }
     index++;
   } while (1);
-  }
+}
 
 /*
   Functions that returns the length of a unicode
@@ -269,7 +272,7 @@ __inline__ source_buffer_index run_attribute_value(char* buffer,
   Second function returns number of Unicode characters
 */
 
-__inline__ source_buffer_index get_length(char* string) {
+__inline__ source_buffer_index get_length(CONST char* string) {
   source_buffer_index index = 0;
   for (; index < UNICODE_CHAR_MAX; index+=4) {
     if (string[index] == 0 && string[index+1] == 0 &&
@@ -280,7 +283,7 @@ __inline__ source_buffer_index get_length(char* string) {
   /* FIXME, EOS not found, error */
 }
 
-__inline__ source_buffer_index get_length_unicode(unicode_char* string) {
+__inline__ source_buffer_index get_length_unicode(CONST unicode_char* string) {
   source_buffer_index index = 0;
   for (; index < UNICODE_CHAR_MAX; index++) {
     if (string[index] == 0) {
@@ -295,9 +298,9 @@ __inline__ source_buffer_index get_length_unicode(unicode_char* string) {
   a bigger character and -1 if compare_to has a bigger
   character.
 */
-__inline__ int compare_unicode_string(char* buffer,
-				      source_buffer_index offset,
-				      unicode_char* compare_to) {
+__inline__ int compare_unicode_string(CONST char* buffer,
+				      CONST source_buffer_index offset,
+				      CONST unicode_char* compare_to) {
   source_buffer_index index = 0;
   unicode_char buffer_character = 0;
 
@@ -330,8 +333,9 @@ __inline__ int compare_unicode_string(char* buffer,
   Assumes at least 1 Unicode character in buffer.
 */
 __inline__ source_buffer_index run_unicode_string\
-                (char* buffer, source_buffer_index offset,
-		 unicode_char* compare_to) {
+                (CONST char* buffer, CONST source_buffer_index offset,
+		 CONST unicode_char* compare_to) {
+  /* FIXME, figure out why index was set to 1. */
   int index = 1;
   unicode_char character = 0;
   for (;; index++) {
@@ -361,7 +365,8 @@ __inline__ source_buffer_index run_unicode_string\
   Starts at position 1, after the BOM.
 */
 
-int validate_unicode_xml_1(char* buffer, int length) {
+int validate_unicode_xml_1(CONST char* buffer,
+			   CONST unicode_char_length length) {
   unicode_char character = 0;
   int counter = 1;
   for (; counter < length; counter += 1) {
@@ -397,8 +402,8 @@ int validate_unicode_xml_1(char* buffer, int length) {
 
 */
 
-__inline__ int is_name_start_character(char* buffer,
-				       source_buffer_index offset) {
+__inline__ int is_name_start_character(CONST char* buffer,
+				       CONST source_buffer_index offset) {
   if (compare_unicode_character_array(buffer, offset,
 		      name_start_character_single_characters) >= 0) {
     #ifdef DEBUG
@@ -433,7 +438,8 @@ __inline__ int is_name_start_character(char* buffer,
 
 */
 
-__inline__ int is_name_character(char* buffer, source_buffer_index offset) {
+__inline__ int is_name_character(CONST char* buffer,
+				 CONST source_buffer_index offset) {
   if (is_name_start_character(buffer, offset)) {
     #ifdef DEBUG
     printf("name start 1\n");
@@ -462,9 +468,11 @@ __inline__ int is_name_character(char* buffer, source_buffer_index offset) {
 /*
   Function that parses an attribute name and returns a
   status value or the size.
+
+  FIXME, return values
 */
 __inline__ small_buffer_index run_attribute_name\
-    (char* buffer, source_buffer_index position,
+    (CONST char* buffer, CONST source_buffer_index position,
      unicode_char **attribute) {
   if (!is_name_start_character(buffer, position)) {
     return 0;
@@ -528,17 +536,18 @@ __inline__ small_buffer_index run_attribute_name\
   and converts 4-byte characters to 21-bits if
   that's the setting.
 */
-int read_into_buffer(buffer, size, amount, file) {
+int read_into_buffer(char* buffer, CONST source_buffer_index size,
+		     CONST source_buffer_index amount, FILE* file) {
 }
 
 /* Checks that the BOM is correct */
-int is_valid_bom(unsigned char *buffer) {
+int is_valid_bom(CONST unsigned char *buffer) {
   return ((char)buffer[0] == (char)0xFF && (char)buffer[1] == (char)0xFE &&
 	  (char)buffer[2] == (char)0x00 && (char)buffer[3] == (char)0x00);
 }
 
 /* Checks to see that the buffer has an uncorrupted Unicode stream */
-int is_valid_stream(source_buffer_index read) {
+int is_valid_stream(CONST source_buffer_index read) {
     if (read % 4) {
       /*
 	There is an uneven number of characters in the
