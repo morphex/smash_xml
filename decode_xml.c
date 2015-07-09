@@ -10,34 +10,34 @@
 
   The 0 is a sign to stop this string
 */
-CONST unicode_char pi_start[3] = {0x003c, 0x003f, 0x0};
+CONST unicode_char pi_start[3] = {0x003c, 0x003f, UNICODE_NULL};
 /* The Unicode version of ?> */
-CONST unicode_char pi_stop[3] = {0x003f, 0x003e, 0x0};
+CONST unicode_char pi_stop[3] = {0x003f, 0x003e, UNICODE_NULL};
 /*
   XML identifier, for indentifying the beginning
   (X|x)(M|m)(L|l) processing instruction
 */
-CONST unicode_char xml_pi_x[3] = {0x0078, 0x0058, 0x0};
-CONST unicode_char xml_pi_m[3] = {0x006d, 0x004d, 0x0};
-CONST unicode_char xml_pi_l[3] = {0x006c, 0x004c, 0x0};
+CONST unicode_char xml_pi_x[3] = {0x0078, 0x0058, UNICODE_NULL};
+CONST unicode_char xml_pi_m[3] = {0x006d, 0x004d, UNICODE_NULL};
+CONST unicode_char xml_pi_l[3] = {0x006c, 0x004c, UNICODE_NULL};
 /*
   The single characters that can be a at the
   start of an attribute name: ":" | "_"
 */
 CONST unicode_char name_start_character_single_characters[] = \
-  {0x003A, 0x005F, 0x00};
+  {0x003A, 0x005F, UNICODE_NULL};
 /*
   The single characters that can be a part of
   an attribute name: "-" | "." | 0x00B7
 */
 CONST unicode_char name_character_single_characters[] = \
-  {0x002D, 0x002E, 0x00B7, 0x00};
+  {0x002D, 0x002E, 0x00B7, UNICODE_NULL};
 
 /*
   The &amp; escape without the prepending &, in other words amp;
 */
 CONST unicode_char ampersand_escape_without_ampersand[] = \
-  {0x61,0x6d,0x70,0x3b,0x00};
+  {0x61,0x6d,0x70,0x3b,UNICODE_NULL};
 
 __inline__ unicode_char read_unicode_character(CONST unsigned char* buffer,
 					       CONST long offset) {
@@ -308,7 +308,7 @@ __inline__ int compare_unicode_string(CONST char* buffer,
 #ifdef DEBUG
     printf("Compare loop %s\n", compare_to);
 #endif
-    if (compare_to[index] == 0x00) {
+    if (compare_to[index] == UNICODE_NULL) {
       /* Found terminating character, success */
 #ifdef DEBUG
       printf("Found terminating character\n");
@@ -344,7 +344,7 @@ __inline__ source_buffer_index run_unicode_string\
     printf("Position %lx Char %lx %c\n", offset+index, character,
 	   (char) character);
     #endif
-    if (character == 0x00) {
+    if (character == UNICODE_NULL) {
       return 0;
     } else if (character == compare_to[0]) {
       #ifdef DEBUG
