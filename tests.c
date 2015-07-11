@@ -7,44 +7,48 @@
   sprintf(buffer, _message, __VA_ARGS__);\
   _handle_error(buffer);
 
-#define READ_BYTES 1024*1024*100
-
 void _handle_error(unsigned char *message) {
   printf("Error: %s\n", message);
 }
 
 int main() {
-  char *buffer = NULL;
+  unsigned int test_basics, test_whitespace, test_attribute,
+    test_miscellaneous, test_compare, test_search, test_slice_and_length, rat;
+  rat = 0; /* Run All Tests */
+  test_basics = rat; test_whitespace = rat; test_attribute = rat;
+  test_miscellaneous = rat; test_compare = rat; test_search = rat;
+  test_slice_and_length = rat;
+  unicode_char *buffer = NULL;
   source_buffer_index read = 0;
+  small_fast_int valid_unicode = 0;
   buffer = malloc(READ_BYTES);
   FILE *file = NULL;
   file = fopen("test.xml", "rb+");
-  read = fread(buffer, sizeof(char), READ_BYTES, file);
-  if (read < 1300) {
-    HANDLE_ERROR("test.xml less than %lu bytes\n", read);
+  read = read_into_buffer(buffer, READ_BYTES, 0, file, &valid_unicode);
+  printf("Read: %i\n", read);
+  /* print_unicode(buffer); */
+  if (read < 200) {
+    HANDLE_ERROR("test.xml less than %lu bytes\n", read*4);
   }
-  /*
-    FIXME, linked lists or something similar.
-  */
-  /*printf("read: %i\n", read);*/
-  buffer[read] = 0x00; buffer[read+1] = 0x00;
-  buffer[read+2] = 0x00; buffer[read+3] = 0x00;
-  if (!is_valid_bom(buffer)) {
-    HANDLE_ERROR("BOM not found", 0)
-  }
-  if (!is_valid_stream(read)) {
-    HANDLE_ERROR("Invalid Unicode stream, read %lu bytes", read)
-  }
-  if (read_unicode_character(buffer, 1) != 0x3c) {
-    HANDLE_ERROR("Expected < at position 1", 0)
-  }
-  if (read_unicode_character(buffer, 1+76) != 0xc5) {
-    HANDLE_ERROR("Expected A with ring above (0xc5) at position 76", 0)
-  }
-  if (read_unicode_character(buffer, 1+120) != 0x10FFFF) {
+  buffer[read] = UNICODE_NULL;
+  if (test_basics) {
+    if (!is_valid_bom(buffer)) {
+      HANDLE_ERROR("BOM not found", 0)
+    }
+    if (!valid_unicode) {
+      HANDLE_ERROR("Invalid Unicode stream, read %lu bytes", read)
+    }
+    if (read_unicode_character(buffer, 1) != 0x3c) {
+      HANDLE_ERROR("Expected < at position 1", 0)
+    }
+    if (read_unicode_character(buffer, 1+76) != 0xc5) {
+      HANDLE_ERROR("Expected A with ring above (0xc5) at position 76", 0)
+    }
+    if (read_unicode_character(buffer, 1+120) != 0x10FFFF) {
     HANDLE_ERROR("Expected (0x10FFFF) at position 120", 0)
+    }
   }
-  {
+  if (test_whitespace) {
     unicode_char result = run_whitespace(buffer, 6);
     unsigned long result2 = read_unicode_character(buffer, result);
     if ((char) result2 != 'v') {
@@ -57,7 +61,7 @@ int main() {
     }
   }
   /* Tests of run_attribute_value */
-  {
+  if (test_attribute) {
     unicode_char quote = read_unicode_character(buffer, 30);
     unsigned long result3 = run_attribute_value(buffer, 31, quote);
     if (result3 != 39) {
@@ -91,7 +95,7 @@ int main() {
   /* Tests of run_attribute_name - FIXME */
 
   /* Whitespace tests */
-  {
+  if (test_whitespace) {
     source_buffer_index index = 0;
     index = run_whitespace(buffer, 291);
     if (index != 300) {
@@ -103,14 +107,14 @@ int main() {
     }
   }
   /* Equal sign test */
-  {
+  if (test_miscellaneous) {
     unicode_char equal_sign = read_unicode_character(buffer, 28+1);
     if (equal_sign != EQUAL_CHARACTER) {
       HANDLE_ERROR("Expected equal sign at position 29, got %lu", equal_sign)
     }
   }
   /* Attribute reading tests */
-  {
+  if (test_attribute) {
     unicode_char attribute_start = read_unicode_character(buffer, 361+1);
     if (attribute_start != SINGLE_QUOTE) {
       HANDLE_ERROR("Expected single quote at position 362, got %lu",
@@ -123,7 +127,7 @@ int main() {
     }
   }
   /* Compare tests */
-  {
+  if (test_compare) {
     unicode_char a_with_ring = read_unicode_character(buffer, 76+1);
     int compare_result = compare_unicode_character(buffer,
 						   120+1,
@@ -162,7 +166,7 @@ int main() {
     }
   }
   /* Search test */
-  {
+  if (test_search) {
     unicode_char compare_to3[] = {0x2d,0x2d,0x3e,0x00};
     source_buffer_index search_result = run_unicode_string(buffer,
 							   0,
@@ -173,7 +177,7 @@ int main() {
     }
   }
   /* Slice and length tests */
-  if (1) {
+  if (test_slice_and_length) {
     source_buffer_index length = get_length(buffer);
     if (length != 1600) {
       HANDLE_ERROR("Expected length of 1600, got %ll", length)
@@ -194,11 +198,5 @@ int main() {
     attribute = NULL;
 
   }
-  {
-    short *s = NULL;
-    printf("sizeof(*short): %i\n", sizeof(s));
-    printf("sizeof(short): %i\n", sizeof(short));
-    printf("sizeof(int): %i\n", sizeof(int));
-    printf("sizeof(long): %i\n", sizeof(long));
-  }
+  
 }

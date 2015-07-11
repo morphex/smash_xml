@@ -100,3 +100,18 @@ typedef unsigned long unicode_char_length;
 
  */
 #define CONST const
+
+/*
+
+  The amount of characters to read from a char stream at a time.
+
+  The amount of bytes we can read.
+
+*/
+#define READ_AMOUNT 4096
+#define READ_BYTES 1024*1024*100
+#if (READ_BYTES % READ_AMOUNT)
+  #error READ_BYTES must be divisible by READ_AMOUNT
+#endif
+
+#define CHAR_SIZE sizeof(char)
