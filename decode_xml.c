@@ -544,6 +544,7 @@ __inline__ small_buffer_index run_attribute_name\
 
   If amount (of unicode_character) is 0, read the entire file into buffer.
 
+  Returns length of unicode character array copied into buffer.
 */
 source_buffer_index read_into_buffer(unicode_char* buffer,
 				     CONST source_buffer_index size,
@@ -559,6 +560,7 @@ source_buffer_index read_into_buffer(unicode_char* buffer,
   char temporary_buffer[READ_AMOUNT]; memset(temporary_buffer, 0, READ_AMOUNT);
   source_buffer_index index = 0;
   unicode_char_length buffer_index = 0;
+  unicode_char character = UNICODE_NULL;
   #ifdef DEBUG
   printf("1: %i,%u,%i,%i\n", read, amount, buffer_index, size);
   #endif
@@ -568,8 +570,14 @@ source_buffer_index read_into_buffer(unicode_char* buffer,
     printf("2: %i\n", read_temporary);
     #endif
     for (index = 0; index < read_temporary; index+=4) {
-      buffer[buffer_index] = _read_unicode_character(temporary_buffer, index);
+      character = _read_unicode_character(temporary_buffer, index);
+      buffer[buffer_index] = character;
       buffer_index++;
+      if (character == UNICODE_NULL) {
+	/* Encountered invalid character, FIXME how to handle this */
+	*valid_unicode = 0;
+	return buffer_index;
+      }
     }
     if (read % 4) {
       /* Invalid stream */
