@@ -564,7 +564,6 @@ source_buffer_index read_into_buffer(unicode_char* buffer,
   #endif
   for (; read < size && buffer_index < amount; read += READ_AMOUNT) {
     read_temporary = fread(temporary_buffer, CHAR_SIZE, READ_AMOUNT, file);
-    buffer_index = (read+index)/4;
     #ifdef DEBUG
     printf("2: %i\n", read_temporary);
     #endif
