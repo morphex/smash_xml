@@ -575,6 +575,8 @@ source_buffer_index read_into_buffer(unicode_char* buffer,
     if (read % 4) {
       /* Invalid stream */
       *valid_unicode = 0;
+      buffer_index++;
+      buffer[buffer_index] = UNICODE_NULL;
       break;
     }
     if (read_temporary != READ_AMOUNT) {
