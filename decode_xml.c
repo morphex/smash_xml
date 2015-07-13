@@ -106,7 +106,7 @@ __inline__ int compare_unicode_character_array(CONST unicode_char* buffer,
   unicode_char current_comparison;
   while (1) {
     current_comparison = compare_to[index];
-    if (current_comparison == 0) {
+    if (current_comparison == UNICODE_NULL) {
       break;
     }
     if (character == current_comparison) {
@@ -155,7 +155,7 @@ __inline__ source_buffer_index run_whitespace(CONST unicode_char* buffer,
     #ifdef DEBUG
     printf("run_whitespace character: %lx\n", character);
     #endif
-    if (character == 0) {
+    if (character == UNICODE_NULL) {
       return offset + (index-1);
     }
     if (is_whitespace(buffer, offset+index)) {
@@ -173,7 +173,7 @@ __inline__ source_buffer_index run_whitespace(CONST unicode_char* buffer,
 void print_unicode(CONST unicode_char* buffer) {
   printf("print_unicode:\n", buffer);
   unicode_char_length index = 0;
-  while (buffer[index] != 0) {
+  while (buffer[index] != UNICODE_NULL) {
     printf("%lx", buffer[index]);
     printf("%c,", (char) buffer[index]);
     index++;
@@ -198,7 +198,7 @@ __inline__ unicode_char_length slice_string(CONST unicode_char* buffer,
 					    unicode_char **slice) {
   unicode_char_length size = stop - start;
   unicode_char_length allocate_bytes = (size + 2) * UNICODE_STORAGE_BYTES;
-  unicode_char *local_slice = malloc(allocate_bytes);
+  unicode_char *local_slice = malloc(allocate_bytes); memset(local_slice, 0, allocate_bytes);
   if (local_slice == 0) {
     return 0;
   }
@@ -209,7 +209,7 @@ __inline__ unicode_char_length slice_string(CONST unicode_char* buffer,
     printf("1 loop %c\t", (char)character);
     #endif
     /* Found NULL before reaching 'stop', maybe realloc? */
-    if (character == 0) {
+    if (character == UNICODE_NULL) {
       break;
     }
     local_slice[slice_index] = character;
@@ -236,7 +236,7 @@ __inline__ source_buffer_index run_attribute_value(CONST unicode_char* buffer,
 					CONST source_buffer_index offset,
 					CONST unicode_char end_quote) {
   int index = 0;
-  unicode_char character = 0;
+  unicode_char character = UNICODE_NULL;
   #ifdef DEBUG
   printf("In run_attribute_value\n");
   printf("Quote: %c\n", (char) end_quote);
@@ -246,7 +246,7 @@ __inline__ source_buffer_index run_attribute_value(CONST unicode_char* buffer,
     #ifdef DEBUG
     printf("Character: %c\n", (char) character);
     #endif
-    if (character == 0) {
+    if (character == UNICODE_NULL) {
       return 0;
     } else if (character == end_quote) {
       return offset + index;
@@ -292,7 +292,7 @@ __inline__ source_buffer_index get_length(CONST char* string) {
 __inline__ source_buffer_index get_length_unicode(CONST unicode_char* string) {
   source_buffer_index index = 0;
   for (; index < UNICODE_CHAR_MAX; index++) {
-    if (string[index] == 0) {
+    if (string[index] == UNICODE_NULL) {
 	return index;
       }
   }
@@ -304,11 +304,12 @@ __inline__ source_buffer_index get_length_unicode(CONST unicode_char* string) {
   a bigger character and -1 if compare_to has a bigger
   character.
 */
-__inline__ int compare_unicode_string(CONST unicode_char* buffer,
-				      CONST source_buffer_index offset,
-				      CONST unicode_char* compare_to) {
+__inline__ small_fast_int \
+    compare_unicode_string(CONST unicode_char* buffer,
+			   CONST source_buffer_index offset,
+			   CONST unicode_char* compare_to) {
   source_buffer_index index = 0;
-  unicode_char buffer_character = 0;
+  unicode_char buffer_character = UNICODE_NULL;
 
   for (;; index++) {
 #ifdef DEBUG
@@ -343,7 +344,7 @@ __inline__ source_buffer_index run_unicode_string\
 		 CONST unicode_char* compare_to) {
   /* FIXME, figure out why index was set to 1. */
   int index = 1;
-  unicode_char character = 0;
+  unicode_char character = UNICODE_NULL;
   for (;; index++) {
     character = read_unicode_character(buffer, offset+index);
     #ifdef DEBUG
@@ -356,7 +357,8 @@ __inline__ source_buffer_index run_unicode_string\
       #ifdef DEBUG
       printf("\tFound matching character at %i\n", index);
       #endif
-      if (compare_unicode_string(buffer, offset+index, compare_to) == 0) {
+      if (compare_unicode_string(buffer, offset+index, compare_to) ==
+	  UNICODE_NULL) {
 	  return offset + index;
       }
     }
@@ -371,9 +373,9 @@ __inline__ source_buffer_index run_unicode_string\
   Starts at position 1, after the BOM.
 */
 
-int validate_unicode_xml_1(CONST unicode_char* buffer,
-			   CONST unicode_char_length length) {
-  unicode_char character = 0;
+small_fast_int validate_unicode_xml_1(CONST unicode_char* buffer,
+				      CONST unicode_char_length length) {
+  unicode_char character = UNICODE_NULL;
   int counter = 1;
   for (; counter < length; counter += 1) {
     character = read_unicode_character(buffer, counter);
@@ -408,8 +410,9 @@ int validate_unicode_xml_1(CONST unicode_char* buffer,
 
 */
 
-__inline__ int is_name_start_character(CONST unicode_char* buffer,
-				       CONST source_buffer_index offset) {
+__inline__ small_fast_int\
+    is_name_start_character(CONST unicode_char* buffer,
+			    CONST source_buffer_index offset) {
   if (compare_unicode_character_array(buffer, offset,
 		      name_start_character_single_characters) >= 0) {
     #ifdef DEBUG
@@ -444,8 +447,8 @@ __inline__ int is_name_start_character(CONST unicode_char* buffer,
 
 */
 
-__inline__ int is_name_character(CONST unicode_char* buffer,
-				 CONST source_buffer_index offset) {
+__inline__ small_fast_int is_name_character(CONST unicode_char* buffer,
+					    CONST source_buffer_index offset) {
   if (is_name_start_character(buffer, offset)) {
     #ifdef DEBUG
     printf("name start 1\n");
