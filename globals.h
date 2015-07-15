@@ -115,3 +115,5 @@ typedef unsigned long unicode_char_length;
 #endif
 
 #define CHAR_SIZE sizeof(char)
+
+

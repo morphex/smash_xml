@@ -14,7 +14,7 @@ void _handle_error(unsigned char *message) {
 int main() {
   unsigned int test_basics, test_whitespace, test_attribute,
     test_miscellaneous, test_compare, test_search, test_slice_and_length, rat;
-  rat = 0; /* Run All Tests */
+  rat = 1; /* Run All Tests */
   test_basics = rat; test_whitespace = rat; test_attribute = rat;
   test_miscellaneous = rat; test_compare = rat; test_search = rat;
   test_slice_and_length = rat;

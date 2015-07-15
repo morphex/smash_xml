@@ -40,6 +40,63 @@ CONST unicode_char name_character_single_characters[] = \
 CONST unicode_char ampersand_escape_without_ampersand[] = \
   {0x61,0x6d,0x70,0x3b,UNICODE_NULL};
 
+/*
+  What we look for at the start of a file to verify that the
+  characters are correctly encoded.
+*/
+#define UNICODE_BOM_32_LE (unicode_char) 0x0000FEFF
+
+/*
+  xml_element can be !--, CDATA, ?xml or a regular element.
+*/
+
+struct xml_element {
+  small_fast_int type;
+  struct xml_piece *next;
+  unicode_char *name;
+  struct xml_attribute *attributes;
+  struct xml_piece *child;
+};
+
+/*
+  Regular XML text data.
+*/
+
+struct xml_text {
+  small_fast_int type;
+  /*
+    The only next element after XML text could be, is an XML element.
+  */
+  struct xml_element *next;
+  unicode_char *characters;
+};
+
+/*
+  xml_element attributes.
+*/
+
+struct xml_attribute {
+  small_fast_int type;
+  unicode_char *name;
+  unicode_char *characters;
+  struct xml_attribute *next;
+};
+
+__inline__ struct xml_element create_xml_element() {
+  struct xml_element my_struct = {0, 0, 0, 0, 0};
+  return my_struct;
+}
+
+__inline__ struct xml_text create_xml_text() {
+  struct xml_text my_struct = {0, 0, 0};
+  return my_struct;
+}
+
+__inline__ struct xml_attribute create_xml_attribute() {
+  struct xml_attribute my_struct = {0, 0, 0, 0};
+  return my_struct;
+}
+
 __inline__ unicode_char _read_unicode_character(CONST unsigned char* buffer,
 					       CONST long offset) {
   unicode_char result = (buffer[(offset)+2] << 16) +
@@ -548,6 +605,7 @@ __inline__ small_buffer_index run_attribute_name\
   If amount (of unicode_character) is 0, read the entire file into buffer.
 
   Returns length of unicode character array copied into buffer.
+
 */
 source_buffer_index read_into_buffer(unicode_char* buffer,
 				     CONST source_buffer_index size,
@@ -601,9 +659,13 @@ source_buffer_index read_into_buffer(unicode_char* buffer,
 }
 
 /* Checks that the BOM is correct */
-int is_valid_bom(CONST unsigned char *buffer) {
-  return ((char)buffer[0] == (char)0xFF && (char)buffer[1] == (char)0xFE &&
-	  (char)buffer[2] == (char)0x00 && (char)buffer[3] == (char)0x00);
+small_fast_int is_valid_bom(CONST unicode_char *buffer) {
+  return buffer[0] == UNICODE_BOM_32_LE;
+}
+
+/* Receives a file object, returns a pointer to a parsed XML document */
+struct xml_piece* parse_file(FILE *file) {
+  unicode_char *buffer = NULL;
 }
 
 /* Checks to see that the buffer has an uncorrupted Unicode stream */
