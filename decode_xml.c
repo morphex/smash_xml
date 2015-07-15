@@ -88,12 +88,12 @@ __inline__ struct xml_element create_xml_element() {
 }
 
 __inline__ struct xml_text create_xml_text() {
-  struct xml_text my_struct = {0, 0, 0};
+  struct xml_text my_struct = {1, 0, 0};
   return my_struct;
 }
 
 __inline__ struct xml_attribute create_xml_attribute() {
-  struct xml_attribute my_struct = {0, 0, 0, 0};
+  struct xml_attribute my_struct = {2, 0, 0, 0};
   return my_struct;
 }
 
