@@ -701,7 +701,8 @@ struct xml_element* parse_file(FILE *file) {
   struct stat file_stat; fstat(file_descriptor, &file_stat);
   source_buffer_index file_size = file_stat.st_size;
   /* FIXME, right place to malloc, here or in function */
-  buffer = malloc(sizeof(unicode_char) * file_size);
+  /* file_size/4 includes BOM, which can be used for end NULL */
+  buffer = malloc(sizeof(unicode_char) * (file_size/4));
   small_fast_int valid_unicode = 0;
   unicode_char_length \
     characters = read_into_buffer(buffer, file_size, 0, file, &valid_unicode);
