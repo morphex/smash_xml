@@ -52,10 +52,13 @@ CONST unicode_char ampersand_escape_without_ampersand[] = \
 
 struct xml_element {
   small_fast_int type;
-  struct xml_piece *next;
+  /*
+    Could be xml_element or xml_text
+  */
+  void *next;
   unicode_char *name;
   struct xml_attribute *attributes;
-  struct xml_piece *child;
+  void *child; 
 };
 
 /*
@@ -77,23 +80,23 @@ struct xml_text {
 
 struct xml_attribute {
   small_fast_int type;
+  struct xml_attribute *next;
   unicode_char *name;
   unicode_char *characters;
-  struct xml_attribute *next;
 };
 
 __inline__ struct xml_element create_xml_element() {
-  struct xml_element my_struct = {0, 0, 0, 0, 0};
+  struct xml_element my_struct = {0, NULL, NULL, NULL, NULL};
   return my_struct;
 }
 
 __inline__ struct xml_text create_xml_text() {
-  struct xml_text my_struct = {1, 0, 0};
+  struct xml_text my_struct = {1, NULL, NULL};
   return my_struct;
 }
 
 __inline__ struct xml_attribute create_xml_attribute() {
-  struct xml_attribute my_struct = {2, 0, 0, 0};
+  struct xml_attribute my_struct = {2, NULL, NULL, NULL};
   return my_struct;
 }
 
