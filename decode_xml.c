@@ -47,7 +47,7 @@ CONST unicode_char ampersand_escape_without_ampersand[] = \
 #define UNICODE_BOM_32_LE (unicode_char) 0x0000FEFF
 
 /*
-  xml_element can be !--, CDATA, ?xml or a regular element.
+  xml_element can be !-- (--!), ![CDATA[ (]]>), ?xml (?>) or a regular element.
 */
 
 struct xml_element {
