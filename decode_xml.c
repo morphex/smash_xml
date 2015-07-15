@@ -68,7 +68,7 @@ struct xml_element {
 struct xml_text {
   small_fast_int type;
   /*
-    The only next element after XML text could be, is an XML element.
+    The only next element after XML text could be, is an xml_element.
   */
   struct xml_element *next;
   unicode_char *characters;
@@ -615,8 +615,19 @@ source_buffer_index read_into_buffer(unicode_char* buffer,
 				     source_buffer_index amount,
 				     FILE* file,
 				     small_fast_int* valid_unicode) {
+  char temporary_bom[4] = {0,0,0,0};
+  fread(temporary_bom, CHAR_SIZE, 4, file);
+  unicode_char bom[1] = {_read_unicode_character(temporary_bom, 0),};
   source_buffer_index read = 0;
   source_buffer_index read_temporary = 0;
+  if (!is_valid_bom(bom)) {
+    #ifdef DEBUG
+    printf("Is valid BOM: %i\n", is_valid_bom(bom));
+    #endif
+    *valid_unicode = 0;
+    return read;
+  }
+
   if (amount == 0) {
     /* Maximum file size, verify that this works FIXME */
     amount = 2 << 30;
@@ -666,11 +677,6 @@ small_fast_int is_valid_bom(CONST unicode_char *buffer) {
   return buffer[0] == UNICODE_BOM_32_LE;
 }
 
-/* Receives a file object, returns a pointer to a parsed XML document */
-struct xml_piece* parse_file(FILE *file) {
-  unicode_char *buffer = NULL;
-}
-
 /* Checks to see that the buffer has an uncorrupted Unicode stream */
 int is_valid_stream(CONST source_buffer_index read) {
     if (read % 4) {
@@ -684,3 +690,22 @@ int is_valid_stream(CONST source_buffer_index read) {
     }
     return 1;
 }
+
+/* For file operations */
+#include <sys/stat.h>
+
+/* Receives a file object, returns a pointer to a parsed XML document */
+struct xml_element* parse_file(FILE *file) {
+  unicode_char *buffer = NULL;
+  long file_descriptor = fileno(file);
+  struct stat file_stat; fstat(file_descriptor, &file_stat);
+  source_buffer_index file_size = file_stat.st_size;
+  /* FIXME, right place to malloc, here or in function */
+  buffer = malloc(sizeof(unicode_char) * file_size);
+  small_fast_int valid_unicode = 0;
+  unicode_char_length \
+    characters = read_into_buffer(buffer, file_size, 0, file, &valid_unicode);
+  printf("Read %i characters\n", characters);
+  free(buffer); buffer = NULL;
+}
+
