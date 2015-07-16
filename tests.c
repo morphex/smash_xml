@@ -147,26 +147,28 @@ int main() {
     }
 
     /* ?xml<\0 */
-    unicode_char compare_to[] = {0x3f,0x78,0x6d,0x6c,0x3c,0x00};
-    compare_result = compare_unicode_character_array(buffer, offset,
+    unicode_char compare_to[]= {0x3f,0x78,0x6d,0x6c,0x3c,UNICODE_NULL};
+    compare_result = compare_unicode_character_array(buffer, offset+2,
 						     compare_to);
-    if (!(compare_result >= 4)) {
-      HANDLE_ERROR("Expected %i or greater on compare array 1, got %i", 4,
+    if (compare_result < 0) {
+      print_unicode(&compare_to);
+      HANDLE_ERROR("Expected > -1 on compare array 1, got %i",
 		   compare_result)
     }
 
     /* <?xml\0 */
     /* FIXME, valid test? */
-    unicode_char compare_to2[] = {0x3c,0x3f,0x78,0x6d,0x6c,0x00};
+    unicode_char compare_to2[] = {0x3c,0x3f,0x78,0x6d,0x6c,UNICODE_NULL};
     compare_result = compare_unicode_string(buffer, 0, compare_to2);
-    if (!(compare_result >= 0)) {
-      HANDLE_ERROR("Expected %i or greater on compare array 2, got %i", 0,
+    if (!(compare_result == 0)) {
+      HANDLE_ERROR("Expected %i on compare_unicode_string, got %i", 0,
 		   compare_result)
     }
   }
   /* Search test */
   if (test_search) {
-    unicode_char compare_to3[] = {0x2d,0x2d,0x3e,0x00};
+    unicode_char compare_to3[] = {0x2d,0x2d,0x3e,UNICODE_NULL};
+    print_unicode(compare_to3);
     source_buffer_index search_result = run_unicode_string(buffer,
 							   0,
 							   &compare_to3);
@@ -200,5 +202,11 @@ int main() {
   {
     FILE* file = fopen("test.xml", "rb+");
     parse_file(file);
+  }
+  {
+    printf("sizeof(int): %i\n", sizeof(int));
+    printf("sizeof(short): %i\n", sizeof(short));
+    printf("sizeof(unicode_char): %i\n", sizeof(unicode_char));
+    printf("sizeof(long): %i\n", sizeof(long));
   }
 }

@@ -158,15 +158,21 @@ __inline__ int compare_unicode_character(CONST unicode_char* buffer,
 
   FIXME, figure out what to do if array is empty.
  */
-__inline__ int compare_unicode_character_array(CONST unicode_char* buffer,
-					CONST source_buffer_index offset,
-					CONST unicode_char* compare_to) {
+__inline__ small_fast_int \
+    compare_unicode_character_array(CONST unicode_char* buffer,
+				    CONST source_buffer_index offset,
+				    CONST unicode_char* compare_to) {
   int index = 0;
   unicode_char character = read_unicode_character(buffer, offset);
   unicode_char current_comparison;
   while (1) {
     current_comparison = compare_to[index];
+    #ifdef DEBUG
+      printf("compare_unicode_character_array: %c - %c\n",
+	     (char) character, (char) current_comparison);
+    #endif
     if (current_comparison == UNICODE_NULL) {
+      /* No match found */
       break;
     }
     if (character == current_comparison) {
@@ -185,8 +191,6 @@ __inline__ int compare_unicode_character_array(CONST unicode_char* buffer,
 	     character, current_comparison);
       #endif
       index++;
-      /* Aj aj aj */
-      /* character = read_unicode_character(buffer, offset+index); */
     }
   }
   /* Nothing found, return -1 */
@@ -372,9 +376,9 @@ __inline__ small_fast_int \
   unicode_char buffer_character = UNICODE_NULL;
 
   for (;; index++) {
-#ifdef DEBUG
-    printf("Compare loop %s\n", compare_to);
-#endif
+    #ifdef DEBUG
+    printf("Compare loop %c\n", (char) compare_to[index]);
+    #endif
     if (compare_to[index] == UNICODE_NULL) {
       /* Found terminating character, success */
 #ifdef DEBUG

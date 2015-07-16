@@ -19,7 +19,13 @@
   unicode characters, for example for comparisons.
 */
 
-#if UINT_MAX >= 0x1FFFFF
+#include <limits.h>
+
+#ifndef UINT_MAX
+  #error UINT_MAX not defined
+#endif
+
+#if (UINT_MAX >= 0x1FFFFF)
 typedef unsigned int unicode_char;
 typedef unsigned int small_buffer_index;
 typedef unsigned int unicode_character_variations;
@@ -115,5 +121,3 @@ typedef unsigned long unicode_char_length;
 #endif
 
 #define CHAR_SIZE sizeof(char)
-
-
