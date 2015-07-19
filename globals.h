@@ -78,14 +78,14 @@ typedef unsigned long unicode_char_length;
 /*
   Various special XML characters
 */
-#define ELEMENT_STARTTAG 0x3c
-#define ELEMENT_ENDTAG 0x3e
-#define AMPERSAND 0x26
+#define ELEMENT_STARTTAG (unicode_char) 0x3c
+#define ELEMENT_ENDTAG (unicode_char) 0x3e
+#define AMPERSAND (unicode_char) 0x26
 
-#define SINGLE_QUOTE 0x27
-#define DOUBLE_QUOTE 0x22
+#define SINGLE_QUOTE (unicode_char) 0x27
+#define DOUBLE_QUOTE (unicode_char) 0x22
 
-#define EQUAL_CHARACTER 0x3d
+#define EQUAL_CHARACTER (unicode_char) 0x3d
 
 #define UNICODE_NULL (unicode_char) 0
 

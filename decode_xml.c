@@ -85,6 +85,15 @@ struct xml_attribute {
   unicode_char *characters;
 };
 
+/*
+  Used to deal with xml_* structs before the type is known.
+*/
+
+struct xml_header {
+  small_fast_int type;
+  void *next;
+}
+
 __inline__ struct xml_element create_xml_element() {
   struct xml_element my_struct = {0, NULL, NULL, NULL, NULL};
   return my_struct;
@@ -622,7 +631,7 @@ source_buffer_index read_into_buffer(unicode_char* buffer,
   char temporary_bom[4] = {0,0,0,0};
   fread(temporary_bom, CHAR_SIZE, 4, file);
   unicode_char bom[1] = {_read_unicode_character(temporary_bom, 0),};
-  source_buffer_index read = 0;
+  source_buffer_index read = 4; /* BOM */
   source_buffer_index read_temporary = 0;
   if (!is_valid_bom(bom)) {
     #ifdef DEBUG
@@ -706,11 +715,25 @@ struct xml_element* parse_file(FILE *file) {
   source_buffer_index file_size = file_stat.st_size;
   /* FIXME, right place to malloc, here or in function */
   /* file_size/4 includes BOM, which can be used for end NULL */
-  buffer = malloc(sizeof(unicode_char) * (file_size/4));
+  buffer = malloc(sizeof(unicode_char) * (file_size/4)); memset(buffer, 0, file_size * CHAR_SIZE)
   small_fast_int valid_unicode = 0;
   unicode_char_length \
     characters = read_into_buffer(buffer, file_size, 0, file, &valid_unicode);
   printf("Read %i characters\n", characters);
+  unicode_char_length index = 0;
+  for (; index < characters; index++) {
+    if (buffer[index] == UNICODE_NULL) {
+      /* Stream ended before it was expected, FIXME */
+      break;
+    }
+    if (buffer[index] == ELEMENT_STARTTAG) {
+      /* Start of regular element, comment, cdata or processing instruction. */
+      if (is_name_start_character(buffer[index+1])) {
+	/* Regular element */
+	1;
+      }
+    }
+  }
   free(buffer); buffer = NULL;
 }
 
