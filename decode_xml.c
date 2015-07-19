@@ -92,20 +92,35 @@ struct xml_attribute {
 struct xml_header {
   small_fast_int type;
   void *next;
-}
+};
 
-__inline__ struct xml_element create_xml_element() {
-  struct xml_element my_struct = {0, NULL, NULL, NULL, NULL};
+__inline__ struct xml_element* create_xml_element() {
+  struct xml_element* my_struct = \
+    (struct xml_element*)malloc(sizeof(struct xml_element));
+  my_struct->type = 0;
+  my_struct->next = NULL;
+  my_struct->name = NULL;
+  my_struct->attributes = NULL;
+  my_struct->child = NULL;
   return my_struct;
 }
 
-__inline__ struct xml_text create_xml_text() {
-  struct xml_text my_struct = {1, NULL, NULL};
+__inline__ struct xml_text* create_xml_text() {
+  struct xml_text* my_struct = \
+    (struct xml_text*)malloc(sizeof(struct xml_text));
+  my_struct->type = 1;
+  my_struct->next = NULL;
+  my_struct->characters = NULL;
   return my_struct;
 }
 
-__inline__ struct xml_attribute create_xml_attribute() {
-  struct xml_attribute my_struct = {2, NULL, NULL, NULL};
+__inline__ struct xml_attribute* create_xml_attribute() {
+  struct xml_attribute* my_struct = \
+    (struct xml_attribute*)malloc(sizeof(struct xml_attribute));
+  my_struct->type = 0;
+  my_struct->next = NULL;
+  my_struct->name = NULL;
+  my_struct->characters = NULL;
   return my_struct;
 }
 
@@ -713,12 +728,16 @@ struct xml_element* parse_file(FILE *file) {
   long file_descriptor = fileno(file);
   struct stat file_stat; fstat(file_descriptor, &file_stat);
   source_buffer_index file_size = file_stat.st_size;
+  struct xml_element *root = create_xml_element();
   /* FIXME, right place to malloc, here or in function */
   /* file_size/4 includes BOM, which can be used for end NULL */
-  buffer = malloc(sizeof(unicode_char) * (file_size/4)); memset(buffer, 0, file_size * CHAR_SIZE)
+  buffer = malloc(sizeof(unicode_char) * (file_size/4)); memset(buffer, 0, file_size * CHAR_SIZE);
   small_fast_int valid_unicode = 0;
   unicode_char_length \
     characters = read_into_buffer(buffer, file_size, 0, file, &valid_unicode);
+  if (!valid_unicode) {
+    return root;
+  }
   printf("Read %i characters\n", characters);
   unicode_char_length index = 0;
   for (; index < characters; index++) {
@@ -728,7 +747,7 @@ struct xml_element* parse_file(FILE *file) {
     }
     if (buffer[index] == ELEMENT_STARTTAG) {
       /* Start of regular element, comment, cdata or processing instruction. */
-      if (is_name_start_character(buffer[index+1])) {
+      if (is_name_start_character(buffer, index+1)) {
 	/* Regular element */
 	1;
       }
@@ -736,4 +755,3 @@ struct xml_element* parse_file(FILE *file) {
   }
   free(buffer); buffer = NULL;
 }
-
