@@ -203,6 +203,33 @@ int main() {
     FILE* file = fopen("test.xml", "rb+");
     parse_file(file);
   }
+  /* Various parsing tools */
+  {
+    if (!is_exclamation_mark_char(EXCLAMATION_MARK)) {
+      HANDLE_ERROR("Couldn't identify exclamation mark", 0)
+    }
+    if (!is_question_mark_char(QUESTION_MARK)) {
+      HANDLE_ERROR("Couldn't identify question mark", 0)
+    }
+    unicode_char cdata[7] = {0,0,0,0,0,0,0};
+    cdata[0] = (unicode_char) 0x43;
+    cdata[1] = (unicode_char) 0x44;
+    cdata[2] = (unicode_char) 0x41;
+    cdata[3] = (unicode_char) 0x54;
+    cdata[4] = (unicode_char) 0x41;
+    cdata[5] = (unicode_char) 0x5b;
+    cdata[6] = UNICODE_NULL;
+    if (!is_cdata_start(cdata, 0)) {
+      HANDLE_ERROR("Couldn't identify CDATA[", 0)
+    }
+    unicode_char comment[3] = {0,0,0};
+    comment[0] = (unicode_char) 0x2d;
+    comment[1] = (unicode_char) 0x2d;
+    comment[2] = UNICODE_NULL;
+    if (!is_comment_start(comment, 0)) {
+      HANDLE_ERROR("Couldn't identify comment start --", 0)
+    }
+  }
   {
     printf("sizeof(int): %i\n", sizeof(int));
     printf("sizeof(short): %i\n", sizeof(short));

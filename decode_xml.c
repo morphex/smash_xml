@@ -47,7 +47,7 @@ CONST unicode_char ampersand_escape_without_ampersand[] = \
 #define UNICODE_BOM_32_LE (unicode_char) 0x0000FEFF
 
 /*
-  xml_element can be !-- (--!), ![CDATA[ (]]>), ?xml (?>) or a regular element.
+  xml_element can be <!--..--!>, <![CDATA[..]]>, <?..?>) or a regular element.
 */
 
 struct xml_element {
@@ -140,9 +140,39 @@ __inline__ unicode_char read_unicode_character(CONST unicode_char* buffer,
   return buffer[offset];
 }
 
-__inline__ unicode_char is_equal_character(CONST unicode_char* buffer,
+__inline__ small_fast_int is_equal_character(CONST unicode_char* buffer,
 					   CONST source_buffer_index offset) {
   return read_unicode_character(buffer, offset) == 0x003D;
+}
+
+__inline__ small_fast_int\
+    is_exclamation_mark_char(CONST unicode_char character) {
+  return character == EXCLAMATION_MARK;
+}
+
+__inline__ small_fast_int\
+    is_question_mark_char(CONST unicode_char character) {
+  return character == QUESTION_MARK;
+}
+
+__inline__ small_fast_int is_cdata_start(unicode_char* buffer,
+					 unicode_char_length offset) {
+  return read_unicode_character(buffer, offset) == 0x43 &&
+    read_unicode_character(buffer, offset+1) == 0x44 &&
+    read_unicode_character(buffer, offset+2) == 0x41 &&
+    read_unicode_character(buffer, offset+3) == 0x54 &&
+    read_unicode_character(buffer, offset+4) == 0x41 &&
+    read_unicode_character(buffer, offset+5) == 0x5b;
+}
+
+__inline__ small_fast_int is_comment_start(unicode_char* buffer,
+					   unicode_char_length offset) {
+#ifdef DEBUG
+  printf("ics: %lx\n", read_unicode_character(buffer, offset));
+  printf("ics: %lx\n", read_unicode_character(buffer, offset+1));
+#endif
+  return read_unicode_character(buffer, offset) == 0x2d &&
+    read_unicode_character(buffer, offset+1) == 0x2d;
 }
 
 /*
@@ -186,9 +216,16 @@ __inline__ small_fast_int \
     compare_unicode_character_array(CONST unicode_char* buffer,
 				    CONST source_buffer_index offset,
 				    CONST unicode_char* compare_to) {
-  int index = 0;
   unicode_char character = read_unicode_character(buffer, offset);
-  unicode_char current_comparison;
+  return compare_unicode_character_array_char(character, compare_to);
+}
+
+__inline__ small_fast_int \
+    compare_unicode_character_array_char(CONST unicode_char character,
+					 CONST unicode_char* compare_to) {
+
+  int index = 0;
+  unicode_char current_comparison = NULL;
   while (1) {
     current_comparison = compare_to[index];
     #ifdef DEBUG
@@ -498,17 +535,15 @@ small_fast_int validate_unicode_xml_1(CONST unicode_char* buffer,
 
 */
 
-__inline__ small_fast_int\
-    is_name_start_character(CONST unicode_char* buffer,
-			    CONST source_buffer_index offset) {
-  if (compare_unicode_character_array(buffer, offset,
+__inline__ \
+    small_fast_int is_name_start_character_char(CONST unicode_char character) {
+  if (compare_unicode_character_array_char(character,
 		      name_start_character_single_characters) >= 0) {
     #ifdef DEBUG
     printf("name_start_character 1\n");
     #endif
     return 1;
   }
-  unicode_char character = read_unicode_character(buffer, offset);
   if ((character >= 0x0061 && character <= 0x007A) || /* [a-z] */
       (character >= 0x0041 && character <= 0x005A) || /* [A-Z] */
       (character >= 0x00C0 && character <= 0x00D6) || /* [#xC0-#xD6] */
@@ -526,6 +561,13 @@ __inline__ small_fast_int\
     return 1;
   }
   return 0;
+}
+
+__inline__ small_fast_int\
+    is_name_start_character(CONST unicode_char* buffer,
+			    CONST source_buffer_index offset) {
+  unicode_char character = read_unicode_character(buffer, offset);
+  return is_name_start_character_char(character);
 }
 
 /*
@@ -740,19 +782,33 @@ struct xml_element* parse_file(FILE *file) {
   }
   printf("Read %i characters\n", characters);
   unicode_char_length index = 0;
+  unicode_char character = UNICODE_NULL;
+  unicode_char look_ahead = UNICODE_NULL;
   for (; index < characters; index++) {
-    if (buffer[index] == UNICODE_NULL) {
+    character = buffer[index];
+    if (character == UNICODE_NULL) {
       /* Stream ended before it was expected, FIXME */
       break;
     }
-    if (buffer[index] == ELEMENT_STARTTAG) {
+    if (character == ELEMENT_STARTTAG) {
       /* Start of regular element, comment, cdata or processing instruction. */
-      if (is_name_start_character(buffer, index+1)) {
+      look_ahead = read_unicode_character(buffer, index+1);
+      if (is_name_start_character_char(look_ahead)) {
 	/* Regular element */
-	1;
+	printf("\nYay, regular");
+      } else if (is_exclamation_mark_char(look_ahead)) {
+	printf("\nExclamation mark!");
+	if (is_cdata_start(buffer, index+2)) {
+	  printf("\nIs CDATA");
+	} else if (is_comment_start(buffer, index+2)) {
+	  printf("\nIs comment");
+	}
+      } else if (is_question_mark_char(look_ahead)) {
+	printf("\nIs question mark");
       }
     }
   }
+  printf("\n");
   free(buffer); buffer = NULL;
   return root;
 }

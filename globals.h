@@ -87,6 +87,10 @@ typedef unsigned long unicode_char_length;
 
 #define EQUAL_CHARACTER (unicode_char) 0x3d
 
+#define EXCLAMATION_MARK (unicode_char) 0x21
+
+#define QUESTION_MARK (unicode_char) 0x3f
+
 #define UNICODE_NULL (unicode_char) 0
 
 /*
