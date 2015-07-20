@@ -117,7 +117,7 @@ __inline__ struct xml_text* create_xml_text() {
 __inline__ struct xml_attribute* create_xml_attribute() {
   struct xml_attribute* my_struct = \
     (struct xml_attribute*)malloc(sizeof(struct xml_attribute));
-  my_struct->type = 0;
+  my_struct->type = 2;
   my_struct->next = NULL;
   my_struct->name = NULL;
   my_struct->characters = NULL;
@@ -754,4 +754,5 @@ struct xml_element* parse_file(FILE *file) {
     }
   }
   free(buffer); buffer = NULL;
+  return root;
 }
