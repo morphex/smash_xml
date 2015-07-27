@@ -140,6 +140,17 @@ __inline__ unicode_char read_unicode_character(CONST unicode_char* buffer,
   return buffer[offset];
 }
 
+/* "Safe" stream reader that checks to see that the stream hasn't ended. */
+
+__inline__ unicode_char safe_read_unicode_character(CONST unicode_char* buffer,
+						    CONST long offset) {
+  unicode_char character = read_unicode_character(buffer, offset);
+  if (character == UNICODE_NULL) {
+    /* FIXME, handle error, stream ended before it was expected */
+  }
+  return character;
+}
+
 __inline__ small_fast_int is_equal_character(CONST unicode_char* buffer,
 					   CONST source_buffer_index offset) {
   return read_unicode_character(buffer, offset) == 0x003D;
@@ -155,7 +166,7 @@ __inline__ small_fast_int\
   return character == QUESTION_MARK;
 }
 
-__inline__ small_fast_int is_cdata_start(unicode_char* buffer,
+__inline__ small_fast_int is_cdata_start(CONST unicode_char* buffer,
 					 unicode_char_length offset) {
   return read_unicode_character(buffer, offset) == 0x43 &&
     read_unicode_character(buffer, offset+1) == 0x44 &&
@@ -165,14 +176,61 @@ __inline__ small_fast_int is_cdata_start(unicode_char* buffer,
     read_unicode_character(buffer, offset+5) == 0x5b;
 }
 
-__inline__ small_fast_int is_comment_start(unicode_char* buffer,
+__inline__ unicode_char_length find_cdata_end(CONST unicode_char* buffer,
+					      unicode_char_length offset) {
+  unicode_char character = UNICODE_NULL;
+  do {
+    character = read_unicode_character(buffer, offset);
+    if (character == CLOSING_SQUARE_BRACKET) {
+      if (safe_read_unicode_character(buffer, offset+1) ==
+	    CLOSING_SQUARE_BRACKET &&
+	  safe_read_unicode_character(buffer, offset+2) ==
+	    ELEMENT_ENDTAG) {
+	return offset+2;
+      }
+    }
+    offset++;
+  } while (character != UNICODE_NULL);
+}
+
+__inline__ unicode_char_length find_comment_end(CONST unicode_char* buffer,
+						unicode_char_length offset) {
+  unicode_char character = UNICODE_NULL;
+  do {
+    character = read_unicode_character(buffer, offset);
+    if (character == HYPHEN) {
+      if (safe_read_unicode_character(buffer, offset+1) == HYPHEN &&
+	  safe_read_unicode_character(buffer, offset+2) ==
+	    ELEMENT_ENDTAG) {
+	return offset+2;
+      }
+    }
+    offset++;
+  } while (character != UNICODE_NULL);
+}
+
+__inline__ unicode_char_length find_processing_instruction_end\
+    (CONST unicode_char* buffer, unicode_char_length offset) {
+  unicode_char character = UNICODE_NULL;
+  do {
+    character = read_unicode_character(buffer, offset);
+    if (character == QUESTION_MARK) {
+      if (safe_read_unicode_character(buffer, offset+1) == ELEMENT_ENDTAG) {
+	return offset+1;
+      }
+    }
+    offset++;
+  } while (character != UNICODE_NULL);
+}
+
+__inline__ small_fast_int is_comment_start(CONST unicode_char* buffer,
 					   unicode_char_length offset) {
 #ifdef DEBUG
   printf("ics: %lx\n", read_unicode_character(buffer, offset));
   printf("ics: %lx\n", read_unicode_character(buffer, offset+1));
 #endif
-  return read_unicode_character(buffer, offset) == 0x2d &&
-    read_unicode_character(buffer, offset+1) == 0x2d;
+  return read_unicode_character(buffer, offset) == HYPHEN &&
+    read_unicode_character(buffer, offset+1) == HYPHEN;
 }
 
 /*
@@ -733,7 +791,7 @@ source_buffer_index read_into_buffer(unicode_char* buffer,
     }
     if (read_temporary != READ_AMOUNT) {
       /* End Of File */
-      buffer_index++;
+      buffer_index;
       buffer[buffer_index] = UNICODE_NULL;
       *valid_unicode = 1;
       break;
@@ -773,10 +831,12 @@ struct xml_element* parse_file(FILE *file) {
   struct xml_element *root = create_xml_element();
   /* FIXME, right place to malloc, here or in function */
   /* file_size/4 includes BOM, which can be used for end NULL */
-  buffer = malloc(sizeof(unicode_char) * (file_size/4)); memset(buffer, 0, file_size * CHAR_SIZE);
+  buffer = malloc(sizeof(unicode_char) * (file_size/4)); memset(buffer, 0, sizeof(unicode_char) * (file_size/4));
   small_fast_int valid_unicode = 0;
   unicode_char_length \
     characters = read_into_buffer(buffer, file_size, 0, file, &valid_unicode);
+  printf("Characters: %lx\n", characters);
+  printf("Allocated: %lx\n", sizeof(unicode_char) * (file_size/4));
   if (!valid_unicode) {
     return root;
   }
@@ -785,7 +845,7 @@ struct xml_element* parse_file(FILE *file) {
   unicode_char character = UNICODE_NULL;
   unicode_char look_ahead = UNICODE_NULL;
   for (; index < characters; index++) {
-    character = buffer[index];
+    character = read_unicode_character(buffer, index);
     if (character == UNICODE_NULL) {
       /* Stream ended before it was expected, FIXME */
       break;
@@ -800,11 +860,17 @@ struct xml_element* parse_file(FILE *file) {
 	printf("\nExclamation mark!");
 	if (is_cdata_start(buffer, index+2)) {
 	  printf("\nIs CDATA");
+	  index = find_cdata_end(buffer, index+2+5);
+	  printf("\nCDATA end was %lx\n", index);
 	} else if (is_comment_start(buffer, index+2)) {
 	  printf("\nIs comment");
+	  index = find_comment_end(buffer, index+2);
+	  printf("\nComment end was %lx\n", index);
 	}
       } else if (is_question_mark_char(look_ahead)) {
 	printf("\nIs question mark");
+	index = find_processing_instruction_end(buffer, index+2);
+	printf("\nProcessing instruction ended at %lx\n", index);
       }
     }
   }

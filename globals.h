@@ -93,6 +93,10 @@ typedef unsigned long unicode_char_length;
 
 #define UNICODE_NULL (unicode_char) 0
 
+#define CLOSING_SQUARE_BRACKET (unicode_char) 0x5d
+
+#define HYPHEN (unicode_char) 0x2d
+
 /*
   Whether to be tolerant to minor errors in XML markup.
 
