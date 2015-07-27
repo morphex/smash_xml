@@ -97,6 +97,8 @@ typedef unsigned long unicode_char_length;
 
 #define HYPHEN (unicode_char) 0x2d
 
+#define SLASH (unicode_char) 0x2f
+
 /*
   Whether to be tolerant to minor errors in XML markup.
 

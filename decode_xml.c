@@ -94,6 +94,32 @@ struct xml_header {
   void *next;
 };
 
+/* 
+   Used to deal with the buffer and parsing state.
+
+   If error is not NULL, something is wrong and the
+   parsing should be aborted.  Error then points to
+   a unicode_char array terminated by null that could
+   contain an explanation of what's wrong.
+
+   When using threads, the error message can appear to
+   be random as any given threads that finished processing
+   a task last with an error will appear.
+
+   FIXME, check atomic updates in threads.
+*/
+
+struct parser {
+  unicode_char *buffer;
+  unicode_char *error;
+};
+
+struct parser* create_xml_parser() {
+  struct parser* my_parser = (struct parser*)malloc(sizeof(struct parser));
+  my_parser->buffer = NULL;
+  my_parser->error = NULL;
+}
+
 __inline__ struct xml_element* create_xml_element() {
   struct xml_element* my_struct = \
     (struct xml_element*)malloc(sizeof(struct xml_element));
@@ -166,6 +192,11 @@ __inline__ small_fast_int\
   return character == QUESTION_MARK;
 }
 
+__inline__ small_fast_int\
+    is_slash(CONST unicode_char character) {
+  return character == SLASH;
+}
+
 __inline__ small_fast_int is_cdata_start(CONST unicode_char* buffer,
 					 unicode_char_length offset) {
   return read_unicode_character(buffer, offset) == 0x43 &&
@@ -204,6 +235,18 @@ __inline__ unicode_char_length find_comment_end(CONST unicode_char* buffer,
 	    ELEMENT_ENDTAG) {
 	return offset+2;
       }
+    }
+    offset++;
+  } while (character != UNICODE_NULL);
+}
+
+__inline__ unicode_char_length find_element_endtag\
+    (CONST unicode_char* buffer, unicode_char_length offset) {
+  unicode_char character = UNICODE_NULL;
+  do {
+    character = read_unicode_character(buffer, offset);
+    if (character == ELEMENT_ENDTAG) {
+	return offset;
     }
     offset++;
   } while (character != UNICODE_NULL);
@@ -791,7 +834,6 @@ source_buffer_index read_into_buffer(unicode_char* buffer,
     }
     if (read_temporary != READ_AMOUNT) {
       /* End Of File */
-      buffer_index;
       buffer[buffer_index] = UNICODE_NULL;
       *valid_unicode = 1;
       break;
@@ -853,24 +895,35 @@ struct xml_element* parse_file(FILE *file) {
     if (character == ELEMENT_STARTTAG) {
       /* Start of regular element, comment, cdata or processing instruction. */
       look_ahead = read_unicode_character(buffer, index+1);
-      if (is_name_start_character_char(look_ahead)) {
-	/* Regular element */
+      if (is_slash(look_ahead)) {
+	/* End of element section.
+
+	 In "average" data with nested elements, / should appear
+	 more often than the first character of an element start
+	 tag 
+
+	*/
+	printf("\nEnd of element section\n");
+	index = find_element_endtag(buffer, index+2);
+	printf("End of element endtag: %ld\n", index);
+      } else if (is_name_start_character_char(look_ahead)) {
+	/* Regular element section */
 	printf("\nYay, regular");
       } else if (is_exclamation_mark_char(look_ahead)) {
 	printf("\nExclamation mark!");
 	if (is_cdata_start(buffer, index+2)) {
 	  printf("\nIs CDATA");
 	  index = find_cdata_end(buffer, index+2+5);
-	  printf("\nCDATA end was %lx\n", index);
+	  printf("\nCDATA end was %ld\n", index);
 	} else if (is_comment_start(buffer, index+2)) {
 	  printf("\nIs comment");
 	  index = find_comment_end(buffer, index+2);
-	  printf("\nComment end was %lx\n", index);
+	  printf("\nComment end was %ld\n", index);
 	}
       } else if (is_question_mark_char(look_ahead)) {
 	printf("\nIs question mark");
 	index = find_processing_instruction_end(buffer, index+2);
-	printf("\nProcessing instruction ended at %lx\n", index);
+	printf("\nProcessing instruction ended at %ld\n", index);
       }
     }
   }
