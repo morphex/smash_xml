@@ -99,6 +99,8 @@ typedef unsigned long unicode_char_length;
 
 #define SLASH (unicode_char) 0x2f
 
+#define SPACE (unicode_char) 0x20
+
 /*
   Whether to be tolerant to minor errors in XML markup.
 

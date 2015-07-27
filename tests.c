@@ -229,6 +229,40 @@ int main() {
     if (!is_comment_start(comment, 0)) {
       HANDLE_ERROR("Couldn't identify comment start --", 0)
     }
+    unicode_char comment_end[10] = {0,0,0,0,0,0,0,0,0,0};
+    comment_end[0] = SPACE;
+    comment_end[1] = SPACE;
+    comment_end[2] = HYPHEN;
+    comment_end[3] = HYPHEN;
+    comment_end[4] = ELEMENT_ENDTAG;
+    if (find_comment_end(comment_end, 0) != 4)  {
+      HANDLE_ERROR("Expected comment end on index 4", 0)
+    }
+    unicode_char cdata_end[6] = {0,0,0,0,0,0};
+    cdata_end[0] = AMPERSAND;
+    cdata_end[1] = ELEMENT_ENDTAG;
+    cdata_end[2] = CLOSING_SQUARE_BRACKET;
+    cdata_end[3] = CLOSING_SQUARE_BRACKET;
+    cdata_end[4] = ELEMENT_ENDTAG;
+    if (find_cdata_end(cdata_end, 0) != 4) {
+      HANDLE_ERROR("Expected cdata end at index 4", 0)
+    }
+    unicode_char element_endtag[5] = {0,0,0,0,0};
+    element_endtag[0] = SPACE;
+    element_endtag[1] = ELEMENT_ENDTAG;
+    element_endtag[2] = SPACE;
+    element_endtag[3] = ELEMENT_ENDTAG;
+    if (find_element_endtag(element_endtag, 0) != 1) {
+      HANDLE_ERROR("Expected element end tag at index 1", 0)
+    }
+    unicode_char processing_instruction_end[5] = {0,0,0,0,0};
+    processing_instruction_end[0] = QUESTION_MARK;
+    processing_instruction_end[1] = ELEMENT_ENDTAG;
+    processing_instruction_end[2] = QUESTION_MARK;
+    processing_instruction_end[3] = ELEMENT_ENDTAG;
+    if (find_processing_instruction_end(processing_instruction_end, 0) != 1) {
+      HANDLE_ERROR("Expected to find processing instruction end at index 2", 0)
+    }
   }
   {
     printf("sizeof(int): %i\n", sizeof(int));
