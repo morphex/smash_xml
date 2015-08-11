@@ -261,7 +261,7 @@ int main() {
     processing_instruction_end[2] = QUESTION_MARK;
     processing_instruction_end[3] = ELEMENT_ENDTAG;
     if (find_processing_instruction_end(processing_instruction_end, 0) != 1) {
-      HANDLE_ERROR("Expected to find processing instruction end at index 2", 0)
+      HANDLE_ERROR("Expected to find processing instruction end at index 1", 0)
     }
   }
   {

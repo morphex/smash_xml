@@ -9,3 +9,6 @@ clean:
 crash:
 	gcc crash_gcc_float.c -o crash_gcc_float
 	gcc crash_gcc_string.c -o crash_gcc_float
+assembler:
+	gcc -fno-asynchronous-unwind-tables -S call_overhead.c
+	gcc -fno-asynchronous-unwind-tables -S call_overhead_reference.c

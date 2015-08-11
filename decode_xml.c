@@ -56,6 +56,7 @@ struct xml_element {
     Could be xml_element or xml_text
   */
   void *next;
+  struct xml_element *parent;
   unicode_char *name;
   struct xml_attribute *attributes;
   void *child; 
@@ -71,6 +72,7 @@ struct xml_text {
     The only next element after XML text could be, is an xml_element.
   */
   struct xml_element *next;
+  struct xml_element *parent;
   unicode_char *characters;
 };
 
@@ -81,17 +83,21 @@ struct xml_text {
 struct xml_attribute {
   small_fast_int type;
   struct xml_attribute *next;
+  struct xml_element *parent;
   unicode_char *name;
   unicode_char *characters;
 };
 
 /*
   Used to deal with xml_* structs before the type is known.
+
+  If parent is NULL, it is the root element.
 */
 
 struct xml_header {
   small_fast_int type;
   void *next;
+  struct xml_element *parent;
 };
 
 /* 
@@ -123,8 +129,9 @@ struct parser* create_xml_parser() {
 __inline__ struct xml_element* create_xml_element() {
   struct xml_element* my_struct = \
     (struct xml_element*)malloc(sizeof(struct xml_element));
-  my_struct->type = 0;
+  my_struct->type = 0; /* 0 means initialized, 3 means complete */
   my_struct->next = NULL;
+  my_struct->parent = NULL;
   my_struct->name = NULL;
   my_struct->attributes = NULL;
   my_struct->child = NULL;
@@ -134,8 +141,9 @@ __inline__ struct xml_element* create_xml_element() {
 __inline__ struct xml_text* create_xml_text() {
   struct xml_text* my_struct = \
     (struct xml_text*)malloc(sizeof(struct xml_text));
-  my_struct->type = 1;
+  my_struct->type = 1; /* 1 means initialized, 4 means complete */
   my_struct->next = NULL;
+  my_struct->parent = NULL;
   my_struct->characters = NULL;
   return my_struct;
 }
@@ -143,8 +151,9 @@ __inline__ struct xml_text* create_xml_text() {
 __inline__ struct xml_attribute* create_xml_attribute() {
   struct xml_attribute* my_struct = \
     (struct xml_attribute*)malloc(sizeof(struct xml_attribute));
-  my_struct->type = 2;
+  my_struct->type = 2; /* 2 means initialized, 5 means complete */
   my_struct->next = NULL;
+  my_struct->parent = NULL;
   my_struct->name = NULL;
   my_struct->characters = NULL;
   return my_struct;
@@ -706,6 +715,20 @@ __inline__ small_fast_int is_name_character(CONST unicode_char* buffer,
 }
 
 /*
+  Function that parses an element name
+*/
+
+__inline__ unicode_char_length run_element_name(
+	     CONST unicode_char* buffer,
+	     CONST unicode_char_length position,
+	     CONST unicode_char name_start,
+	     unicode_char **name) {
+  unicode_char *name_storage = malloc(sizeof(unicode_char)*MAXIMUM_NAME_SIZE);
+  memset(name_storage, 0, MAXIMUM_NAME_SIZE*sizeof(unicode_char));
+  
+}
+
+/*
   Function that parses an attribute name and returns a
   status value or the size.
 
@@ -719,6 +742,7 @@ __inline__ small_buffer_index run_attribute_name\
   }
   unicode_char *attribute_storage = malloc(sizeof(unicode_char)*
 					   MAXIMUM_NAME_SIZE);
+  memset(attribute_storage, 0, MAXIMUM_NAME_SIZE*sizeof(unicode_char));
   if (attribute_storage == 0) {
     return 0;
   }
@@ -886,6 +910,8 @@ struct xml_element* parse_file(FILE *file) {
   unicode_char_length index = 0;
   unicode_char character = UNICODE_NULL;
   unicode_char look_ahead = UNICODE_NULL;
+  struct xml_element *current = create_xml_element();
+  void *previous = NULL;
   for (; index < characters; index++) {
     character = read_unicode_character(buffer, index);
     if (character == UNICODE_NULL) {
@@ -908,6 +934,24 @@ struct xml_element* parse_file(FILE *file) {
 	printf("End of element endtag: %ld\n", index);
       } else if (is_name_start_character_char(look_ahead)) {
 	/* Regular element section */
+	unicode_char_length element_end = find_element_endtag(buffer, index+2);
+	struct xml_element *new = NULL;
+	if (previous == NULL) {
+	  new = create_xml_element();
+	  current->child = new;
+	  new->parent = current;
+	  current = new;
+	  parse_element_start_tag(buffer, look_ahead, index+2,
+				  element_end, &current);
+	} else {
+	  new = create_xml_element();
+	  new->parent = (struct xml_element*) previous->parent;
+	  (struct xml_element* ) previous->next = new;
+	  current = new;
+	  parse_element_start_tag(buffer, look_ahead, index+2,
+				  element_end, &current);
+	}
+	index = element_end;
 	printf("\nYay, regular");
       } else if (is_exclamation_mark_char(look_ahead)) {
 	printf("\nExclamation mark!");
@@ -924,6 +968,10 @@ struct xml_element* parse_file(FILE *file) {
 	printf("\nIs question mark");
 	index = find_processing_instruction_end(buffer, index+2);
 	printf("\nProcessing instruction ended at %ld\n", index);
+      } else {
+	printf("\nError, could not handle character %lx at %lx",
+	       look_ahead, index);
+	exit(1);
       }
     }
   }
