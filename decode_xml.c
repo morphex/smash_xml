@@ -885,6 +885,14 @@ int is_valid_stream(CONST source_buffer_index read) {
     return 1;
 }
 
+__inline__ unicode_char_length parse_element_start_tag(
+	                         CONST unicode_char* buffer,
+				 CONST unicode_char first_char,
+				 unicode_char_length offset,
+				 unicode_char_length end,
+				 void* current) {
+}
+
 /* For file operations */
 #include <sys/stat.h>
 
@@ -945,8 +953,8 @@ struct xml_element* parse_file(FILE *file) {
 				  element_end, &current);
 	} else {
 	  new = create_xml_element();
-	  new->parent = (struct xml_element*) previous->parent;
-	  (struct xml_element* ) previous->next = new;
+	  new->parent = ((struct xml_element*) previous)->parent;
+	  ((struct xml_element*) previous)->next = new;
 	  current = new;
 	  parse_element_start_tag(buffer, look_ahead, index+2,
 				  element_end, &current);
