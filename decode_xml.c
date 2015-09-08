@@ -946,7 +946,7 @@ __inline__ unicode_char_length parse_element_start_tag(
   /*
     first_char is unused, FIXME
   */
-  unicode_char *element_name;
+  unicode_char *element_name = NULL;
   small_buffer_index result = 0;
   result = run_element_name(buffer, offset-1, end, &element_name);
   if (result == 0) {

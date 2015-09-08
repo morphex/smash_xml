@@ -270,4 +270,5 @@ int main() {
     printf("sizeof(unicode_char): %i\n", sizeof(unicode_char));
     printf("sizeof(long): %i\n", sizeof(long));
   }
+  exit(0);
 }
