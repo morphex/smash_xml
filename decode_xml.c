@@ -787,6 +787,8 @@ __inline__ small_buffer_index run_attribute_name\
   the size.
 
   FIXME, return values
+
+  FIXME, end and overruns
 */
 __inline__ small_buffer_index run_element_name\
     (CONST unicode_char* buffer, CONST source_buffer_index position,
@@ -1008,16 +1010,14 @@ struct xml_element* parse_file(FILE *file) {
 	/* Regular element section */
 	printf("Look ahead: %lx\n", look_ahead);
 	unicode_char_length element_end = find_element_endtag(buffer, index+2);
-	struct xml_element *new = NULL;
+	struct xml_element *new = create_xml_element();
 	if (previous == NULL) {
-	  new = create_xml_element();
 	  current->child = new;
 	  new->parent = current;
 	  current = new;
 	  parse_element_start_tag(buffer, look_ahead, index+2,
 				  element_end, &current);
 	} else {
-	  new = create_xml_element();
 	  new->parent = ((struct xml_element*) previous)->parent;
 	  ((struct xml_element*) previous)->next = new;
 	  current = new;
