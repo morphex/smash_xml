@@ -714,19 +714,6 @@ __inline__ small_fast_int is_name_character(CONST unicode_char* buffer,
   return 0;
 }
 
-/*
-  Function that parses an element name
-*/
-
-__inline__ unicode_char_length run_element_name(
-	     CONST unicode_char* buffer,
-	     CONST unicode_char_length position,
-	     CONST unicode_char name_start,
-	     unicode_char **name) {
-  unicode_char *name_storage = malloc(sizeof(unicode_char)*MAXIMUM_NAME_SIZE);
-  memset(name_storage, 0, MAXIMUM_NAME_SIZE*sizeof(unicode_char));
-  
-}
 
 /*
   Function that parses an attribute name and returns a
@@ -790,6 +777,69 @@ __inline__ small_buffer_index run_attribute_name\
 	return 0;
       }
       *attribute = attribute_storage;
+      return index;
+    }
+  } while (1);
+}
+
+/*
+  Function that parses an element name and returns a status value or
+  the size.
+
+  FIXME, return values
+*/
+__inline__ small_buffer_index run_element_name\
+    (CONST unicode_char* buffer, CONST source_buffer_index position,
+     unicode_char_length end, unicode_char **element_name) {
+  if (!is_name_start_character(buffer, position)) {
+    return 0;
+  }
+  unicode_char *element_name_storage = malloc(sizeof(unicode_char)*
+					   MAXIMUM_NAME_SIZE);
+  memset(element_name_storage, 0, MAXIMUM_NAME_SIZE*sizeof(unicode_char));
+  if (element_name_storage == 0) {
+    return 0;
+  }
+  source_buffer_index index = 0;
+  unicode_char character = 0;
+  #ifdef DEBUG
+  printf("In run_element_name..\n");
+  #endif
+  do {
+    if (index > MAXIMUM_NAME_SIZE) {
+      /* Element name is too long */
+      free(element_name_storage); element_name_storage = NULL;
+      return 0;
+    }
+    character = read_unicode_character(buffer, position+index);
+    if (is_name_character(buffer, position+index)) {
+      #ifdef DEBUG
+      printf("Address: %i\n", &element_name_storage[index]);
+      #endif
+      element_name_storage[index] = character;
+      index++;
+      #ifdef DEBUG
+      printf("Copied a char..%lx %c %i %c\n", character, (char)character,
+	     index, element_name_storage[index]);
+      #endif
+    } else if (!is_whitespace(buffer, position+index) && (position+index) < end) {
+      /* Invalid character found */
+      #ifdef DEBUG
+      printf("Invalid character found..\n");
+      #endif
+      free(element_name_storage); element_name_storage = NULL;
+      return 0;
+    } else {
+      #ifdef DEBUG
+      printf("Success, reallocating memory..\n");
+      #endif
+      element_name_storage[index+1] = UNICODE_NULL;
+      element_name_storage = realloc(element_name_storage,
+				  (sizeof(unicode_char)*(index+1)));
+      if (element_name_storage == NULL) {
+	return 0;
+      }
+      *element_name = element_name_storage;
       return index;
     }
   } while (1);
@@ -891,6 +941,20 @@ __inline__ unicode_char_length parse_element_start_tag(
 				 unicode_char_length offset,
 				 unicode_char_length end,
 				 void* current) {
+  /*
+    first_char is unused, FIXME
+  */
+  unicode_char *element_name;
+  small_buffer_index result = 0;
+  result = run_element_name(buffer, offset-1, end, &element_name);
+  if (result == 0) {
+    printf("run_element_name result 0\n");
+    exit(1);
+  }
+  print_unicode(element_name);
+  ((struct xml_element*)current)->name = element_name;
+  printf("In parse_element_start_tag..\n");
+  print_unicode(((struct xml_element*)current)->name);
 }
 
 /* For file operations */
@@ -942,6 +1006,7 @@ struct xml_element* parse_file(FILE *file) {
 	printf("End of element endtag: %ld\n", index);
       } else if (is_name_start_character_char(look_ahead)) {
 	/* Regular element section */
+	printf("Look ahead: %lx\n", look_ahead);
 	unicode_char_length element_end = find_element_endtag(buffer, index+2);
 	struct xml_element *new = NULL;
 	if (previous == NULL) {
