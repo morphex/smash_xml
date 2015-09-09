@@ -57,6 +57,7 @@ struct xml_element {
   */
   void *next;
   struct xml_element *parent;
+  void *previous;
   unicode_char *name;
   struct xml_attribute *attributes;
   void *child; 
@@ -73,6 +74,7 @@ struct xml_text {
   */
   struct xml_element *next;
   struct xml_element *parent;
+  struct xml_element *previous;
   unicode_char *characters;
 };
 
@@ -84,6 +86,7 @@ struct xml_attribute {
   small_fast_int type;
   struct xml_attribute *next;
   struct xml_element *parent;
+  void *previous;
   unicode_char *name;
   unicode_char *characters;
 };
@@ -98,6 +101,7 @@ struct xml_header {
   small_fast_int type;
   void *next;
   struct xml_element *parent;
+  void *previous;
 };
 
 /* 
@@ -132,6 +136,7 @@ __inline__ struct xml_element* create_xml_element() {
   my_struct->type = 0; /* 0 means initialized, 3 means complete */
   my_struct->next = NULL;
   my_struct->parent = NULL;
+  my_struct->previous = NULL;
   my_struct->name = NULL;
   my_struct->attributes = NULL;
   my_struct->child = NULL;
@@ -144,6 +149,7 @@ __inline__ struct xml_text* create_xml_text() {
   my_struct->type = 1; /* 1 means initialized, 4 means complete */
   my_struct->next = NULL;
   my_struct->parent = NULL;
+  my_struct->previous = NULL;
   my_struct->characters = NULL;
   return my_struct;
 }
@@ -154,6 +160,7 @@ __inline__ struct xml_attribute* create_xml_attribute() {
   my_struct->type = 2; /* 2 means initialized, 5 means complete */
   my_struct->next = NULL;
   my_struct->parent = NULL;
+  my_struct->previous = NULL;
   my_struct->name = NULL;
   my_struct->characters = NULL;
   return my_struct;
@@ -300,7 +307,7 @@ __inline__ unicode_char is_attribute_value_start(CONST unicode_char* buffer,
   }
 }
 
-/* Returns 0 if strings are similar */
+/* Returns 0 if strings are equal */
 __inline__ int compare_unicode_character(CONST unicode_char* buffer,
 					 CONST source_buffer_index offset,
 					 CONST unicode_char compare_to) {
@@ -308,13 +315,23 @@ __inline__ int compare_unicode_character(CONST unicode_char* buffer,
   #ifdef DEBUG
   printf("compare_unicode_character: %lx - %lx\n", character, compare_to);
   #endif
-  if (character == compare_to)
+  return compare_unicode_character_char(character, compare_to);
+
+}
+
+/* Returns 0 if characters are equal */
+__inline__ small_fast_int \
+    compare_unicode_character_char(CONST unicode_char first,
+				   CONST unicode_char second) {
+  if (first == second)
     return 0;
-  if (character > compare_to)
+  if (first > second)
     return 1;
-  if (character < compare_to)
+  if (first < second)
     return -1;
 }
+
+
 
 /*
   Function that compares given position in buffer to an array
@@ -984,7 +1001,7 @@ struct xml_element* parse_file(FILE *file) {
   unicode_char_length index = 0;
   unicode_char character = UNICODE_NULL;
   unicode_char look_ahead = UNICODE_NULL;
-  struct xml_element *current = create_xml_element();
+  void *current = create_xml_element();
   void *previous = NULL;
   for (; index < characters; index++) {
     character = read_unicode_character(buffer, index);
@@ -1003,8 +1020,20 @@ struct xml_element* parse_file(FILE *file) {
 	 tag 
 
 	*/
+	unicode_char_length end = find_element_endtag(buffer, index+2);
+	unicode_char* element_name = NULL;
+	run_element_name(buffer, index+2, end, &element_name);
+	if (((struct xml_header*)current)->type == 3 &&
+	    !(((struct xml_element*)current)->name == element_name)) {
+	}
+	if (previous == NULL &&
+	    ((struct xml_header*)current)->parent == NULL) {
+	  /* Found an end tag without a start tag */
+	  printf("End tag without start tag found at %lx", index);
+	  exit(1);
+	}
 	printf("\nEnd of element section\n");
-	index = find_element_endtag(buffer, index+2);
+	index = end;
 	printf("End of element endtag: %ld\n", index);
       } else if (is_name_start_character_char(look_ahead)) {
 	/* Regular element section */
@@ -1012,17 +1041,20 @@ struct xml_element* parse_file(FILE *file) {
 	unicode_char_length element_end = find_element_endtag(buffer, index+2);
 	struct xml_element *new = create_xml_element();
 	if (previous == NULL) {
-	  current->child = new;
+	  ((struct xml_element*)current)->child = new;
 	  new->parent = current;
 	  current = new;
 	  parse_element_start_tag(buffer, look_ahead, index+2,
 				  element_end, &current);
+	  previous = current;
 	} else {
 	  new->parent = ((struct xml_element*) previous)->parent;
+	  new->previous = previous;
 	  ((struct xml_element*) previous)->next = new;
 	  current = new;
 	  parse_element_start_tag(buffer, look_ahead, index+2,
 				  element_end, &current);
+	  previous = current;
 	}
 	index = element_end;
 	printf("\nYay, regular");
@@ -1036,6 +1068,10 @@ struct xml_element* parse_file(FILE *file) {
 	  printf("\nIs comment");
 	  index = find_comment_end(buffer, index+2);
 	  printf("\nComment end was %ld\n", index);
+	} else {
+	  /* Unknown (invalid) XML */
+	  printf("Invalid XML, exclamation mark, %lx\n", index);
+	  exit(1);
 	}
       } else if (is_question_mark_char(look_ahead)) {
 	printf("\nIs question mark");

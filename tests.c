@@ -180,8 +180,8 @@ int main() {
   /* Slice and length tests */
   if (test_slice_and_length) {
     source_buffer_index length = get_length(buffer);
-    if (length != 1596) {
-      HANDLE_ERROR("Expected length of 1596, got %i", length)
+    if (length != 1944) {
+      HANDLE_ERROR("Expected length of 1944, got %i", length)
     }
     unicode_char *attribute = NULL;
     unicode_char_length end = 0;
@@ -199,7 +199,7 @@ int main() {
     attribute = NULL;
 
   }
-  {
+  if (0) {
     FILE* file = fopen("test.xml", "rb+");
     parse_file(file);
   }
@@ -263,6 +263,17 @@ int main() {
     if (find_processing_instruction_end(processing_instruction_end, 0) != 1) {
       HANDLE_ERROR("Expected to find processing instruction end at index 1", 0)
     }
+    unicode_char root_element[5] = {0,0,0,0,0};
+    root_element[0] = 0x72;
+    root_element[1] = 0x6f;
+    root_element[2] = 0x6f;
+    root_element[3] = 0x74;
+    root_element[4] = UNICODE_NULL;
+    unicode_char *element_name = NULL;
+    if (run_element_name(root_element, 0, 4, &element_name) != 4) {
+      HANDLE_ERROR("Expected 4 as a result on test line %s", __LINE__)
+    }
+
   }
   {
     printf("sizeof(int): %i\n", sizeof(int));
