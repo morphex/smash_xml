@@ -999,15 +999,17 @@ __inline__ unicode_char_length parse_element_start_tag(
   */
   unicode_char *element_name = NULL;
   small_buffer_index result = 0;
+  struct xml_element *element = current;
   result = run_element_name(buffer, offset-1, end, &element_name);
   if (result == 0) {
     printf("run_element_name result 0\n");
     exit(1);
   }
   print_unicode(element_name);
-  ((struct xml_element*)current)->name = element_name;
+  element->name = element_name;
   printf("In parse_element_start_tag..\n");
-  print_unicode(((struct xml_element*)current)->name);
+  print_unicode(element->name);
+  element->type = 3;
 }
 
 /* For file operations */
@@ -1059,6 +1061,8 @@ struct xml_element* parse_file(FILE *file) {
 	run_element_name(buffer, index+2, end, &element_name);
 	if (((struct xml_header*)current)->type == 3 &&
 	    !(((struct xml_element*)current)->name == element_name)) {
+	  printf("Found end tag for ");
+	  print_unicode(element_name);
 	}
 	if (previous == NULL &&
 	    ((struct xml_header*)current)->parent == NULL) {
@@ -1082,7 +1086,14 @@ struct xml_element* parse_file(FILE *file) {
 				  element_end, &current);
 	  previous = current;
 	} else {
-	  new->parent = ((struct xml_element*) previous)->parent;
+	  if (((struct xml_header*)previous)->type == 3) {
+	    new->parent = ((struct xml_element*) previous)->parent;
+	  }
+	  else if (((struct xml_header*)previous)->type == 4) {
+	    new->parent = ((struct xml_text*) previous)->parent;
+	  } else {
+	    FAIL("Unexpected input for xml?->type", 0)
+	  }
 	  new->previous = previous;
 	  ((struct xml_element*) previous)->next = new;
 	  current = new;

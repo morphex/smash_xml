@@ -135,3 +135,8 @@ typedef unsigned long unicode_char_length;
 #endif
 
 #define CHAR_SIZE sizeof(char)
+
+#define FAIL(message, ...) unsigned char* _message = message;\
+  char buffer[1024*1024];\
+  sprintf(buffer, _message, __VA_ARGS__);\
+  exit(1);

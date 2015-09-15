@@ -13,11 +13,13 @@ void _handle_error(unsigned char *message) {
 
 int main() {
   unsigned int test_basics, test_whitespace, test_attribute,
-    test_miscellaneous, test_compare, test_search, test_slice_and_length, rat;
+    test_miscellaneous, test_compare, test_search, test_slice_and_length, rat,
+    test_parse_file;
   rat = 1; /* Run All Tests */
   test_basics = rat; test_whitespace = rat; test_attribute = rat;
   test_miscellaneous = rat; test_compare = rat; test_search = rat;
   test_slice_and_length = rat;
+  test_parse_file = rat;
   unicode_char *buffer = NULL;
   source_buffer_index read = 0;
   small_fast_int valid_unicode = 0;
@@ -199,7 +201,7 @@ int main() {
     attribute = NULL;
 
   }
-  if (0) {
+  if (test_parse_file) {
     FILE* file = fopen("test.xml", "rb+");
     parse_file(file);
   }
