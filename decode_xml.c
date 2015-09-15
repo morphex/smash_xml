@@ -423,17 +423,17 @@ __inline__ source_buffer_index run_whitespace(CONST unicode_char* buffer,
   Prints unicode_char array.
 */
 void print_unicode(CONST unicode_char* buffer) {
-  printf("print_unicode:\n", buffer);
+  printf("print_unicode: %lx\n", (unsigned long) &buffer);
   unicode_char_length index = 0;
   while (buffer[index] != UNICODE_NULL) {
-    printf("%lx", buffer[index]);
+    printf("%lx", (unsigned long) buffer[index]);
     printf("%c,", (char) buffer[index]);
     index++;
   }
   #ifdef DEBUG
   printf("\nindex %i\n", index);
   #endif
-  printf("\nend print_unicode\n", buffer);
+  printf("\nend print_unicode\n");
 }
 
 /*
@@ -982,7 +982,7 @@ int is_valid_stream(CONST source_buffer_index read) {
 	buffer, each 32 bit unicode symbol consists of
       4 bytes, 32 bits.
       */
-      printf("Corrupted Unicode stream, %i bytes", read);
+      printf("Corrupted Unicode stream, %lx bytes", read);
       return 0;
     }
     return 1;
@@ -1002,14 +1002,14 @@ __inline__ unicode_char_length parse_element_start_tag(
   struct xml_element *element = current;
   result = run_element_name(buffer, offset-1, end, &element_name);
   if (result == 0) {
-    printf("run_element_name result 0\n");
-    exit(1);
+    FAIL("run_element_name result 0\n", 0);
   }
   print_unicode(element_name);
   element->name = element_name;
   printf("In parse_element_start_tag..\n");
   print_unicode(element->name);
   element->type = 3;
+  printf("Set type to 3, %i\n", element->type);
 }
 
 /* For file operations */
@@ -1033,14 +1033,16 @@ struct xml_element* parse_file(FILE *file) {
   if (!valid_unicode) {
     return root;
   }
-  printf("Read %i characters\n", characters);
+  printf("Read %lx characters\n", characters);
   unicode_char_length index = 0;
   unicode_char character = UNICODE_NULL;
   unicode_char look_ahead = UNICODE_NULL;
   void *current = create_xml_element();
   void *previous = NULL;
   for (; index < characters; index++) {
+    printf("\nLoop index %lx", index);
     character = read_unicode_character(buffer, index);
+    printf("\nCharacter: %lx", (unsigned long) character);
     if (character == UNICODE_NULL) {
       /* Stream ended before it was expected, FIXME */
       break;
@@ -1067,15 +1069,14 @@ struct xml_element* parse_file(FILE *file) {
 	if (previous == NULL &&
 	    ((struct xml_header*)current)->parent == NULL) {
 	  /* Found an end tag without a start tag */
-	  printf("End tag without start tag found at %lx", index);
-	  exit(1);
+	  FAIL("End tag without start tag found at %lx", index);
 	}
 	printf("\nEnd of element section\n");
 	index = end;
 	printf("End of element endtag: %ld\n", index);
       } else if (is_name_start_character_char(look_ahead)) {
 	/* Regular element section */
-	printf("Look ahead: %lx\n", look_ahead);
+	printf("Look ahead: %lx\n", (unsigned long) look_ahead);
 	unicode_char_length element_end = find_element_endtag(buffer, index+2);
 	struct xml_element *new = create_xml_element();
 	if (previous == NULL) {
@@ -1086,13 +1087,14 @@ struct xml_element* parse_file(FILE *file) {
 				  element_end, &current);
 	  previous = current;
 	} else {
-	  if (((struct xml_header*)previous)->type == 3) {
+	  small_fast_int *type = &((struct xml_header*)previous)->type;
+	  if (*type == 3) {
 	    new->parent = ((struct xml_element*) previous)->parent;
 	  }
-	  else if (((struct xml_header*)previous)->type == 4) {
+	  else if (*type == 4) {
 	    new->parent = ((struct xml_text*) previous)->parent;
 	  } else {
-	    FAIL("Unexpected input for xml?->type", 0)
+	    FAIL("Unexpected input for xml?->type: %i", *type)
 	  }
 	  new->previous = previous;
 	  ((struct xml_element*) previous)->next = new;
@@ -1102,7 +1104,7 @@ struct xml_element* parse_file(FILE *file) {
 	  previous = current;
 	}
 	index = element_end;
-	printf("\nYay, regular");
+	printf("\nYay, regular, %lx", index);
       } else if (is_exclamation_mark_char(look_ahead)) {
 	printf("\nExclamation mark!");
 	if (is_cdata_start(buffer, index+2)) {
@@ -1115,17 +1117,16 @@ struct xml_element* parse_file(FILE *file) {
 	  printf("\nComment end was %ld\n", index);
 	} else {
 	  /* Unknown (invalid) XML */
-	  printf("Invalid XML, exclamation mark, %lx\n", index);
-	  exit(1);
+	  FAIL("Invalid XML, exclamation mark, %lx\n", index);
 	}
       } else if (is_question_mark_char(look_ahead)) {
 	printf("\nIs question mark");
 	index = find_processing_instruction_end(buffer, index+2);
 	printf("\nProcessing instruction ended at %ld\n", index);
       } else {
-	printf("\nError, could not handle character %lx at %lx",
+	printf("The end\n");
+	FAIL("\nError, could not handle character %lx at %lx",
 	       look_ahead, index);
-	exit(1);
       }
     }
   }

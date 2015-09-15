@@ -8,6 +8,7 @@ clean:
 	rm -f *.exe
 	rm -f *.exe.stackdump
 	rm -f *~
+	rm -f ./decode_xml
 crash:
 	gcc crash_gcc_float.c -o crash_gcc_float
 	gcc crash_gcc_string.c -o crash_gcc_float

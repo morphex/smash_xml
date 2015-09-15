@@ -27,7 +27,7 @@ int main() {
   FILE *file = NULL;
   file = fopen("test.xml", "rb+");
   read = read_into_buffer(buffer, READ_BYTES, 0, file, &valid_unicode);
-  printf("Read: %i\n", read);
+  printf("Read: %lx\n", read);
   /* print_unicode(buffer); */
   unicode_char_length offset = 0;
   if (read < 200) {
@@ -283,10 +283,10 @@ int main() {
     }
   }
   {
-    printf("sizeof(int): %i\n", sizeof(int));
-    printf("sizeof(short): %i\n", sizeof(short));
-    printf("sizeof(unicode_char): %i\n", sizeof(unicode_char));
-    printf("sizeof(long): %i\n", sizeof(long));
+    printf("sizeof(int): %lx\n", sizeof(int));
+    printf("sizeof(short): %lx\n", sizeof(short));
+    printf("sizeof(unicode_char): %lx\n", sizeof(unicode_char));
+    printf("sizeof(long): %lx\n", sizeof(long));
   }
   exit(0);
 }
