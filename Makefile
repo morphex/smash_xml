@@ -17,4 +17,5 @@ assembler:
 	gcc -fno-asynchronous-unwind-tables -S call_overhead_reference.c
 test: clean all
 	./decode_xml
-
+valgrind: test
+	valgrind --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=100 --track-fds=yes ./decode_xml

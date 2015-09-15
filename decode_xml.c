@@ -999,7 +999,7 @@ __inline__ unicode_char_length parse_element_start_tag(
   */
   unicode_char *element_name = NULL;
   small_buffer_index result = 0;
-  struct xml_element *element = current;
+  struct xml_element *element = &current;
   result = run_element_name(buffer, offset-1, end, &element_name);
   if (result == 0) {
     FAIL("run_element_name result 0\n", 0);
@@ -1040,12 +1040,15 @@ struct xml_element* parse_file(FILE *file) {
   void *current = create_xml_element();
   void *previous = NULL;
   for (; index < characters; index++) {
+    printf("Buffer address: %lx\n", (unsigned long) &buffer);
     printf("\nLoop index %lx", index);
     character = read_unicode_character(buffer, index);
     printf("\nCharacter: %lx", (unsigned long) character);
     if (character == UNICODE_NULL) {
       /* Stream ended before it was expected, FIXME */
-      break;
+      print_unicode(buffer);
+      fflush(NULL);
+      FAIL("Stream ended before it was expected in parse_file, position %lx, line %i", index, __LINE__)
     }
     if (character == ELEMENT_STARTTAG) {
       /* Start of regular element, comment, cdata or processing instruction. */
@@ -1085,6 +1088,8 @@ struct xml_element* parse_file(FILE *file) {
 	  current = new;
 	  parse_element_start_tag(buffer, look_ahead, index+2,
 				  element_end, &current);
+	  /* FIXME, this is regarded as start tag handled */
+	  ((struct xml_header*) current)->type = 3;
 	  previous = current;
 	} else {
 	  small_fast_int *type = &((struct xml_header*)previous)->type;
