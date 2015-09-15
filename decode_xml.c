@@ -759,7 +759,7 @@ __inline__ small_fast_int\
     reference = unicode[index];
     compare_to = convert_char_to_unicode_char(characters[index]);
     result = compare_unicode_character_char(reference, compare_to);
-    if (!result) {
+    if (result) {
       return result;
     }
   }
