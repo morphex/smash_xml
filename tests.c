@@ -273,7 +273,12 @@ int main() {
     if (run_element_name(root_element, 0, 4, &element_name) != 4) {
       HANDLE_ERROR("Expected 4 as a result on test line %s", __LINE__)
     }
-
+    char compare_to[] = "root\0";
+    small_fast_int result = compare_unicode_array_char_array(element_name,
+							     compare_to);
+    if (result != 0) {
+      HANDLE_ERROR("Expected result 0 on test line %i", __LINE__)
+    }
   }
   {
     printf("sizeof(int): %i\n", sizeof(int));

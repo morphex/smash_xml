@@ -575,6 +575,7 @@ __inline__ small_fast_int \
       return 0;
     }
     buffer_character = read_unicode_character(buffer, offset+index);
+
     if (buffer_character == compare_to[index]) {
       continue;
     } else if (buffer_character > compare_to[index]) {
@@ -731,6 +732,39 @@ __inline__ small_fast_int is_name_character(CONST unicode_char* buffer,
   return 0;
 }
 
+__inline__ unicode_char convert_char_to_unicode_char(char character) {
+  return (unicode_char) character;
+}
+
+/*
+  Convenience function for comparing unicode_char to a regular
+  null-terminated char array.
+
+  Returns 0 when unicode contains characters, starting at position 0.
+*/
+
+__inline__ small_fast_int\
+    compare_unicode_array_char_array(unicode_char *unicode,
+				     char *characters) {
+  source_buffer_index number_of_characters = strlen(characters);
+  if (number_of_characters >= UNICODE_CHAR_MAX) {
+    /* FIXME, deal with this and stringth lengths */
+    return 0;
+  }
+  unicode_char reference = UNICODE_NULL;
+  unicode_char compare_to = UNICODE_NULL;
+  small_fast_int result = 0;
+  source_buffer_index index = 0;
+  for (; index < number_of_characters; index++) {
+    reference = unicode[index];
+    compare_to = convert_char_to_unicode_char(characters[index]);
+    result = compare_unicode_character_char(reference, compare_to);
+    if (!result) {
+      return result;
+    }
+  }
+  return result;
+};
 
 /*
   Function that parses an attribute name and returns a

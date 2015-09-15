@@ -62,11 +62,13 @@ typedef uint_fast8_t small_fast_unsigned_int;
   used as offset+index where both are source_buffer_index.
 */
 typedef unsigned long source_buffer_index;
+#define SOURCE_BUFFER_INDEX_MAX UNICODE_CHAR_MAX;
 
 /*
   The type used to work with sizes of unicode_char strings.
 */
 typedef unsigned long unicode_char_length;
+#define UNICODE_CHAR_LENGTH_MAX UNICODE_CHAR_MAX;
 
 /*
   Maximum element or attribute name size is 4 MB
