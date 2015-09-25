@@ -35,6 +35,9 @@ int main() {
   }
   buffer[read] = UNICODE_NULL;
   if (test_basics) {
+#ifdef DEBUG
+    printf("test_basics\n");
+#endif
     if (!valid_unicode) {
       HANDLE_ERROR("Invalid Unicode stream, read %lu bytes", read)
     }
@@ -49,6 +52,9 @@ int main() {
     }
   }
   if (test_whitespace) {
+#ifdef DEBUG
+    printf("test_whitespace\n");
+#endif
     unicode_char result = run_whitespace(buffer, offset+5);
     unsigned long result2 = read_unicode_character(buffer, result);
     if ((char) result2 != 'v') {
@@ -62,6 +68,9 @@ int main() {
   }
   /* Tests of run_attribute_value */
   if (test_attribute) {
+#ifdef DEBUG
+    printf("test_attribute\n");
+#endif
     unicode_char quote = read_unicode_character(buffer, offset+29);
     unsigned long result3 = run_attribute_value(buffer, offset+30, quote);
     if (result3 != 38) {
@@ -96,6 +105,9 @@ int main() {
 
   /* Whitespace tests */
   if (test_whitespace) {
+#ifdef DEBUG
+    printf("test_whitespace\n");
+#endif
     source_buffer_index index = 0;
     index = run_whitespace(buffer, offset+290);
     if (index != 299) {
@@ -108,6 +120,9 @@ int main() {
   }
   /* Equal sign test */
   if (test_miscellaneous) {
+#ifdef DEBUG
+    printf("test_miscellaneous\n");
+#endif
     unicode_char equal_sign = read_unicode_character(buffer, offset+28);
     if (equal_sign != EQUAL_CHARACTER) {
       HANDLE_ERROR("Expected equal sign at position 28, got %lu", equal_sign)
@@ -115,6 +130,9 @@ int main() {
   }
   /* Attribute reading tests */
   if (test_attribute) {
+#ifdef DEBUG
+    printf("test_attribute\n");
+#endif
     unicode_char attribute_start = read_unicode_character(buffer, offset+361);
     if (attribute_start != SINGLE_QUOTE) {
       HANDLE_ERROR("Expected single quote at position 361, got %lu",
@@ -128,6 +146,9 @@ int main() {
   }
   /* Compare tests */
   if (test_compare) {
+#ifdef DEBUG
+    printf("test_compare\n");
+#endif
     unicode_char a_with_ring = read_unicode_character(buffer, offset+76);
     int compare_result = compare_unicode_character(buffer,
 						   offset+120,
@@ -169,6 +190,9 @@ int main() {
   }
   /* Search test */
   if (test_search) {
+#ifdef DEBUG
+    printf("test_search\n");
+#endif
     unicode_char compare_to3[] = {0x2d,0x2d,0x3e,UNICODE_NULL};
     print_unicode(compare_to3);
     source_buffer_index search_result = run_unicode_string(buffer,
@@ -181,6 +205,9 @@ int main() {
   }
   /* Slice and length tests */
   if (test_slice_and_length) {
+#ifdef DEBUG
+    printf("test_slice_and_length\n");
+#endif
     source_buffer_index length = get_length(buffer);
     if (length != 1944) {
       HANDLE_ERROR("Expected length of 1944, got %i", length)
@@ -202,11 +229,17 @@ int main() {
 
   }
   if (test_parse_file) {
+#ifdef DEBUG
+    printf("test_parse_file\n");
+#endif
     FILE* file = fopen("test.xml", "rb+");
     parse_file(file);
   }
   /* Various parsing tools */
   {
+#ifdef DEBUG
+    printf("test_\n");
+#endif
     if (!is_exclamation_mark_char(EXCLAMATION_MARK)) {
       HANDLE_ERROR("Couldn't identify exclamation mark", 0)
     }

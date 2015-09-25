@@ -139,5 +139,5 @@ typedef unsigned long unicode_char_length;
 #define FAIL(message, ...) unsigned char* _message = message;\
   char buffer[1024*1024];\
   sprintf(buffer, _message, __VA_ARGS__);\
-  printf("\n%s\n", buffer); fflush;\
+  printf("\n%s\n", buffer); fflush(NULL);	\
   exit(1);

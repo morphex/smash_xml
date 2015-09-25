@@ -1017,6 +1017,9 @@ __inline__ unicode_char_length parse_element_start_tag(
 
 /* Receives a file object, returns a pointer to a parsed XML document */
 struct xml_element* parse_file(FILE *file) {
+  printf("In parse_file..\n");
+  fflush(NULL);
+  return 0;
   unicode_char *buffer = NULL;
   long file_descriptor = fileno(file);
   struct stat file_stat; fstat(file_descriptor, &file_stat);
