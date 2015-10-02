@@ -4,6 +4,9 @@ all:
 debug:
 	gcc -DDEBUG -ggdb3 -std=c90 decode_xml.c tests.c -o decode_xml -I.
 	gcc -DDEBUG -ggdb3 -std=c90 message.c -o message -I.
+efence-build:
+	gcc -lefence -DDEBUG -ggdb3 -std=c90 decode_xml.c tests.c -o decode_xml -I.
+	gcc -lefence -DDEBUG -ggdb3 -std=c90 message.c -o message -I.
 clean:
 	rm -f *.exe
 	rm -f *.exe.stackdump
@@ -18,4 +21,8 @@ assembler:
 test: clean debug
 	./decode_xml
 valgrind: test
-	valgrind --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=100 --track-fds=yes ./decode_xml
+	valgrind --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=100 --track-fds=yes ./decode_xml > valgrind_out.log 2>&1
+	@echo
+	@echo "Program/Valgrind output in valgrind_out.log"
+efence: efence-build
+	./decode_xml

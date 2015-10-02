@@ -426,13 +426,18 @@ void print_unicode(CONST unicode_char* buffer) {
   printf("print_unicode: %lx\n", (unsigned long) &buffer);
   unicode_char_length index = 0;
   while (buffer[index] != UNICODE_NULL) {
-    printf("%lx", (unsigned long) buffer[index]);
-    printf("%c,", (char) buffer[index]);
+    printf("%c", (char) buffer[index]);
     index++;
   }
-  #ifdef DEBUG
+  printf("  ");
+  index = 0;
+  while (buffer[index] != UNICODE_NULL) {
+    printf("%lx,", (unsigned long) buffer[index]);
+    index++;
+  }
+#ifdef DEBUG
   printf("\nindex %i\n", index);
-  #endif
+#endif
   printf("\nend print_unicode\n");
 }
 
@@ -584,6 +589,11 @@ __inline__ small_fast_int \
       return -1;
     }
   }
+}
+
+__inline__ small_fast_int compare_unicode_strings(unicode_char* first,
+						  unicode_char* second) {
+  return compare_unicode_string(first, 0, second);
 }
 
 /*
@@ -999,7 +1009,7 @@ __inline__ unicode_char_length parse_element_start_tag(
   */
   unicode_char *element_name = NULL;
   small_buffer_index result = 0;
-  struct xml_element *element = &current;
+  struct xml_element *element = current;
   result = run_element_name(buffer, offset-1, end, &element_name);
   if (result == 0) {
     FAIL("run_element_name result 0\n", 0);
@@ -1017,9 +1027,11 @@ __inline__ unicode_char_length parse_element_start_tag(
 
 /* Receives a file object, returns a pointer to a parsed XML document */
 struct xml_element* parse_file(FILE *file) {
+  /*
   printf("In parse_file..\n");
   fflush(NULL);
   return 0;
+  */
   unicode_char *buffer = NULL;
   long file_descriptor = fileno(file);
   struct stat file_stat; fstat(file_descriptor, &file_stat);
@@ -1043,10 +1055,12 @@ struct xml_element* parse_file(FILE *file) {
   void *current = create_xml_element();
   void *previous = NULL;
   for (; index < characters; index++) {
+    character = read_unicode_character(buffer, index);
+    /*
     printf("Buffer address: %lx\n", (unsigned long) &buffer);
     printf("\nLoop index %lx", index);
-    character = read_unicode_character(buffer, index);
-    printf("\nCharacter: %lx", (unsigned long) character);
+    printf("\nCharacter: %lx\n", (unsigned long) character);
+    */
     if (character == UNICODE_NULL) {
       /* Stream ended before it was expected, FIXME */
       print_unicode(buffer);
@@ -1067,10 +1081,15 @@ struct xml_element* parse_file(FILE *file) {
 	unicode_char_length end = find_element_endtag(buffer, index+2);
 	unicode_char* element_name = NULL;
 	run_element_name(buffer, index+2, end, &element_name);
-	if (((struct xml_header*)current)->type == 3 &&
-	    !(((struct xml_element*)current)->name == element_name)) {
-	  printf("Found end tag for ");
-	  print_unicode(element_name);
+	printf("Element name: ");
+	print_unicode(element_name);
+	printf("\n");
+	struct xml_element *tag = current;
+	if (tag->type == 3 &&
+	    !compare_unicode_strings(tag->name, element_name)) {
+	  printf("Found end tag\n");
+	} else {
+	  printf("");
 	}
 	if (previous == NULL &&
 	    ((struct xml_header*)current)->parent == NULL) {
@@ -1090,9 +1109,10 @@ struct xml_element* parse_file(FILE *file) {
 	  new->parent = current;
 	  current = new;
 	  parse_element_start_tag(buffer, look_ahead, index+2,
-				  element_end, &current);
-	  /* FIXME, this is regarded as start tag handled */
-	  ((struct xml_header*) current)->type = 3;
+				  element_end, current);
+	  /* FIXME, this is regarded as start tag handled
+	     ((struct xml_header*) current)->type = 3;
+	  */
 	  previous = current;
 	} else {
 	  small_fast_int *type = &((struct xml_header*)previous)->type;
@@ -1108,7 +1128,7 @@ struct xml_element* parse_file(FILE *file) {
 	  ((struct xml_element*) previous)->next = new;
 	  current = new;
 	  parse_element_start_tag(buffer, look_ahead, index+2,
-				  element_end, &current);
+				  element_end, current);
 	  previous = current;
 	}
 	index = element_end;

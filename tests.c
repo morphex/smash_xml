@@ -15,11 +15,11 @@ int main() {
   unsigned int test_basics, test_whitespace, test_attribute,
     test_miscellaneous, test_compare, test_search, test_slice_and_length, rat,
     test_parse_file;
-  rat = 1; /* Run All Tests */
-  test_basics = rat; test_whitespace = rat; test_attribute = rat;
-  test_miscellaneous = rat; test_compare = rat; test_search = rat;
-  test_slice_and_length = rat;
-  test_parse_file = rat;
+  rat = 0; /* Run All Tests */
+  test_basics = 1; test_whitespace = 1; test_attribute = 1;
+  test_miscellaneous = 1; test_compare = 1; test_search = 1;
+  test_slice_and_length = 1;
+  test_parse_file = 1;
   unicode_char *buffer = NULL;
   source_buffer_index read = 0;
   small_fast_int valid_unicode = 0;
@@ -27,6 +27,7 @@ int main() {
   FILE *file = NULL;
   file = fopen("test.xml", "rb+");
   read = read_into_buffer(buffer, READ_BYTES, 0, file, &valid_unicode);
+  fclose(file);
   printf("Read: %lx\n", read);
   /* print_unicode(buffer); */
   unicode_char_length offset = 0;
