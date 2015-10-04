@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <globals.h>
+#include <decode_xml.h>
 
 int main() {
   unsigned int test_basics, test_whitespace, test_attribute,
@@ -166,7 +167,7 @@ int main() {
     compare_result = compare_unicode_character_array(buffer, offset+2,
 						     compare_to);
     if (compare_result < 0) {
-      print_unicode(&compare_to);
+      print_unicode(compare_to);
       HANDLE_ERROR("Expected > -1 on compare array 1, got %i",
 		   compare_result);
     }
@@ -189,7 +190,7 @@ int main() {
     print_unicode(compare_to3);
     source_buffer_index search_result = run_unicode_string(buffer,
 							   0,
-							   &compare_to3);
+							   compare_to3);
     if (search_result != 287) {
       HANDLE_ERROR("Expected to find result at position %lx, got %lx",
 		   287, search_result);
@@ -200,7 +201,7 @@ int main() {
 #ifdef DEBUG
     printf("test_slice_and_length\n");
 #endif
-    source_buffer_index length = get_length(buffer);
+    source_buffer_index length = get_length_unicode(buffer);
     if (length != 1944) {
       HANDLE_ERROR("Expected length of 1944, got %i", length);
     }

@@ -149,3 +149,78 @@ typedef unsigned long unicode_char_length;
 
 #define ASCII_TAB 9
 #define ASCII_NULL (char) 0
+
+
+/*
+  xml_element can be <!--..--!>, <![CDATA[..]]>, <?..?>) or a regular element.
+*/
+
+struct xml_element {
+  small_int type;
+  /*
+    Could be xml_element or xml_text
+  */
+  void *next;
+  struct xml_element *parent;
+  void *previous;
+  unicode_char *name;
+  struct xml_attribute *attributes;
+  void *child; 
+};
+
+/*
+  Regular XML text data.
+*/
+
+struct xml_text {
+  small_int type;
+  /*
+    The only next element after XML text could be, is an xml_element.
+  */
+  struct xml_element *next;
+  struct xml_element *parent;
+  struct xml_element *previous;
+  unicode_char *characters;
+};
+
+/*
+  xml_element attributes.
+*/
+
+struct xml_attribute {
+  small_int type;
+  struct xml_attribute *next;
+  struct xml_element *parent;
+  void *previous;
+  unicode_char *name;
+  unicode_char *characters;
+};
+
+/*
+  Used to deal with xml_* structs before the type is known.
+
+  If parent is NULL, it is the root element.
+*/
+
+struct xml_header {
+  small_int type;
+  void *next;
+  struct xml_element *parent;
+  void *previous;
+};
+
+/* 
+   Used to deal with the buffer and parsing state.
+
+   If error is not NULL, something is wrong and the
+   parsing should be aborted.  Error then points to
+   a unicode_char array terminated by null that could
+   contain an explanation of what's wrong.
+
+   When using threads, the error message can appear to
+   be random as any given threads that finished processing
+   a task last with an error will appear.
+
+   FIXME, check atomic updates in threads.
+*/
+

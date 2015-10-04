@@ -1,10 +1,16 @@
 all:
+	gcc makeheaders.c -o makeheaders
+	./makeheaders decode_xml.c
 	gcc -std=c90 -Wall -Wno-implicit-function-declaration decode_xml.c tests.c -g -o decode_xml -I.
 #	gcc -std=c90 -Wall  message.c -g -o message -I.
 debug:
+	gcc makeheaders.c -o makeheaders
+	./makeheaders decode_xml.c
 	gcc -DDEBUG -Wall -ggdb3 -std=c90 decode_xml.c tests.c -o decode_xml -I.
 #	gcc -DDEBUG -Wall -ggdb3 -std=c90 message.c -o message -I.
 efence-build:
+	gcc makeheaders.c -o makeheaders
+	./makeheaders decode_xml.c
 	gcc -lefence -DDEBUG -Wall -ggdb3 -std=c90 decode_xml.c tests.c -o decode_xml -I.
 #	gcc -lefence -DDEBUG -Wall -ggdb3 -std=c90 message.c -o message -I.
 clean:
