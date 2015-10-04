@@ -51,7 +51,7 @@ CONST unicode_char ampersand_escape_without_ampersand[] = \
 */
 
 struct xml_element {
-  small_fast_int type;
+  small_int type;
   /*
     Could be xml_element or xml_text
   */
@@ -68,7 +68,7 @@ struct xml_element {
 */
 
 struct xml_text {
-  small_fast_int type;
+  small_int type;
   /*
     The only next element after XML text could be, is an xml_element.
   */
@@ -83,7 +83,7 @@ struct xml_text {
 */
 
 struct xml_attribute {
-  small_fast_int type;
+  small_int type;
   struct xml_attribute *next;
   struct xml_element *parent;
   void *previous;
@@ -98,7 +98,7 @@ struct xml_attribute {
 */
 
 struct xml_header {
-  small_fast_int type;
+  small_int type;
   void *next;
   struct xml_element *parent;
   void *previous;
@@ -128,6 +128,7 @@ struct parser* create_xml_parser() {
   struct parser* my_parser = (struct parser*)malloc(sizeof(struct parser));
   my_parser->buffer = NULL;
   my_parser->error = NULL;
+  return my_parser;
 }
 
 __inline__ struct xml_element* create_xml_element() {
@@ -193,27 +194,27 @@ __inline__ unicode_char safe_read_unicode_character(CONST unicode_char* buffer,
   return character;
 }
 
-__inline__ small_fast_int is_equal_character(CONST unicode_char* buffer,
+__inline__ small_int is_equal_character(CONST unicode_char* buffer,
 					   CONST source_buffer_index offset) {
   return read_unicode_character(buffer, offset) == 0x003D;
 }
 
-__inline__ small_fast_int\
+__inline__ small_int\
     is_exclamation_mark_char(CONST unicode_char character) {
   return character == EXCLAMATION_MARK;
 }
 
-__inline__ small_fast_int\
+__inline__ small_int\
     is_question_mark_char(CONST unicode_char character) {
   return character == QUESTION_MARK;
 }
 
-__inline__ small_fast_int\
+__inline__ small_int\
     is_slash(CONST unicode_char character) {
   return character == SLASH;
 }
 
-__inline__ small_fast_int is_cdata_start(CONST unicode_char* buffer,
+__inline__ small_int is_cdata_start(CONST unicode_char* buffer,
 					 unicode_char_length offset) {
   return read_unicode_character(buffer, offset) == 0x43 &&
     read_unicode_character(buffer, offset+1) == 0x44 &&
@@ -238,6 +239,7 @@ __inline__ unicode_char_length find_cdata_end(CONST unicode_char* buffer,
     }
     offset++;
   } while (character != UNICODE_NULL);
+  FAIL("Reached end of find_cdata_end, %lx", offset);
 }
 
 __inline__ unicode_char_length find_comment_end(CONST unicode_char* buffer,
@@ -254,6 +256,7 @@ __inline__ unicode_char_length find_comment_end(CONST unicode_char* buffer,
     }
     offset++;
   } while (character != UNICODE_NULL);
+  FAIL("Reached end of find_comment_end, %lx", offset);
 }
 
 __inline__ unicode_char_length find_element_endtag\
@@ -266,6 +269,7 @@ __inline__ unicode_char_length find_element_endtag\
     }
     offset++;
   } while (character != UNICODE_NULL);
+  FAIL("Reached end of find_element_endtag, %lx", offset);
 }
 
 __inline__ unicode_char_length find_processing_instruction_end\
@@ -280,9 +284,10 @@ __inline__ unicode_char_length find_processing_instruction_end\
     }
     offset++;
   } while (character != UNICODE_NULL);
+  FAIL("Could not find end of processing instruction, %lx", offset);
 }
 
-__inline__ small_fast_int is_comment_start(CONST unicode_char* buffer,
+__inline__ small_int is_comment_start(CONST unicode_char* buffer,
 					   unicode_char_length offset) {
 #ifdef DEBUG
   printf("ics: %lx\n", read_unicode_character(buffer, offset));
@@ -320,7 +325,7 @@ __inline__ int compare_unicode_character(CONST unicode_char* buffer,
 }
 
 /* Returns 0 if characters are equal */
-__inline__ small_fast_int \
+__inline__ small_int \
     compare_unicode_character_char(CONST unicode_char first,
 				   CONST unicode_char second) {
   if (first == second)
@@ -329,6 +334,7 @@ __inline__ small_fast_int \
     return 1;
   if (first < second)
     return -1;
+  FAIL("Reached end of compare_unicode_character_char", 0);
 }
 
 
@@ -339,7 +345,7 @@ __inline__ small_fast_int \
 
   FIXME, figure out what to do if array is empty.
  */
-__inline__ small_fast_int \
+__inline__ small_int \
     compare_unicode_character_array(CONST unicode_char* buffer,
 				    CONST source_buffer_index offset,
 				    CONST unicode_char* compare_to) {
@@ -347,7 +353,7 @@ __inline__ small_fast_int \
   return compare_unicode_character_array_char(character, compare_to);
 }
 
-__inline__ small_fast_int \
+__inline__ small_int \
     compare_unicode_character_array_char(CONST unicode_char character,
 					 CONST unicode_char* compare_to) {
 
@@ -515,7 +521,7 @@ __inline__ source_buffer_index run_attribute_value(CONST unicode_char* buffer,
     } else if (character == AMPERSAND) {
       if(!compare_unicode_string(buffer, offset+1,
 				 ampersand_escape_without_ampersand)) {
-	index = index += 3;
+	index += 3;
       } else {
 	/* Improperly encoded & */
 	#ifndef TOLERATE_MINOR_ERRORS
@@ -543,7 +549,7 @@ __inline__ source_buffer_index get_length(CONST char* string) {
 	return index;
     }
   }
-  /* FIXME, EOS not found, error */
+  FAIL("Reached end of get_length without a return value %ul", index);
 }
 
 __inline__ source_buffer_index get_length_unicode(CONST unicode_char* string) {
@@ -553,6 +559,7 @@ __inline__ source_buffer_index get_length_unicode(CONST unicode_char* string) {
 	return index;
       }
   }
+  FAIL("Reached end of get_length_unicode without a return value %ul", index);
 }
 
 /*
@@ -561,7 +568,7 @@ __inline__ source_buffer_index get_length_unicode(CONST unicode_char* string) {
   a bigger character and -1 if compare_to has a bigger
   character.
 */
-__inline__ small_fast_int \
+__inline__ small_int \
     compare_unicode_string(CONST unicode_char* buffer,
 			   CONST source_buffer_index offset,
 			   CONST unicode_char* compare_to) {
@@ -591,7 +598,7 @@ __inline__ small_fast_int \
   }
 }
 
-__inline__ small_fast_int compare_unicode_strings(unicode_char* first,
+__inline__ small_int compare_unicode_strings(unicode_char* first,
 						  unicode_char* second) {
   return compare_unicode_string(first, 0, second);
 }
@@ -636,7 +643,7 @@ __inline__ source_buffer_index run_unicode_string\
   Starts at position 1, after the BOM.
 */
 
-small_fast_int validate_unicode_xml_1(CONST unicode_char* buffer,
+small_int validate_unicode_xml_1(CONST unicode_char* buffer,
 				      CONST unicode_char_length length) {
   unicode_char character = UNICODE_NULL;
   int counter = 1;
@@ -674,7 +681,7 @@ small_fast_int validate_unicode_xml_1(CONST unicode_char* buffer,
 */
 
 __inline__ \
-    small_fast_int is_name_start_character_char(CONST unicode_char character) {
+    small_int is_name_start_character_char(CONST unicode_char character) {
   if (compare_unicode_character_array_char(character,
 		      name_start_character_single_characters) >= 0) {
     #ifdef DEBUG
@@ -701,7 +708,7 @@ __inline__ \
   return 0;
 }
 
-__inline__ small_fast_int\
+__inline__ small_int\
     is_name_start_character(CONST unicode_char* buffer,
 			    CONST source_buffer_index offset) {
   unicode_char character = read_unicode_character(buffer, offset);
@@ -715,7 +722,7 @@ __inline__ small_fast_int\
 
 */
 
-__inline__ small_fast_int is_name_character(CONST unicode_char* buffer,
+__inline__ small_int is_name_character(CONST unicode_char* buffer,
 					    CONST source_buffer_index offset) {
   if (is_name_start_character(buffer, offset)) {
     #ifdef DEBUG
@@ -753,7 +760,7 @@ __inline__ unicode_char convert_char_to_unicode_char(char character) {
   Returns 0 when unicode contains characters, starting at position 0.
 */
 
-__inline__ small_fast_int\
+__inline__ small_int\
     compare_unicode_array_char_array(unicode_char *unicode,
 				     char *characters) {
   source_buffer_index number_of_characters = strlen(characters);
@@ -763,7 +770,7 @@ __inline__ small_fast_int\
   }
   unicode_char reference = UNICODE_NULL;
   unicode_char compare_to = UNICODE_NULL;
-  small_fast_int result = 0;
+  small_int result = 0;
   source_buffer_index index = 0;
   for (; index < number_of_characters; index++) {
     reference = unicode[index];
@@ -812,7 +819,7 @@ __inline__ small_buffer_index run_attribute_name\
     character = read_unicode_character(buffer, position+index);
     if (is_name_character(buffer, position+index)) {
       #ifdef DEBUG
-      printf("Address: %i\n", &attribute[index]);
+      printf("Address: %lx\n", &attribute[index]);
       #endif
       attribute_storage[index] = character;
       index++;
@@ -877,7 +884,7 @@ __inline__ small_buffer_index run_element_name\
     character = read_unicode_character(buffer, position+index);
     if (is_name_character(buffer, position+index)) {
       #ifdef DEBUG
-      printf("Address: %i\n", &element_name_storage[index]);
+      printf("Address: %lx\n", &element_name_storage[index]);
       #endif
       element_name_storage[index] = character;
       index++;
@@ -922,8 +929,8 @@ source_buffer_index read_into_buffer(unicode_char* buffer,
 				     CONST source_buffer_index size,
 				     source_buffer_index amount,
 				     FILE* file,
-				     small_fast_int* valid_unicode) {
-  char temporary_bom[4] = {0,0,0,0};
+				     small_int* valid_unicode) {
+  unsigned char temporary_bom[4] = {0,0,0,0};
   fread(temporary_bom, CHAR_SIZE, 4, file);
   unicode_char bom[1] = {_read_unicode_character(temporary_bom, 0),};
   source_buffer_index read = 4; /* BOM */
@@ -940,7 +947,7 @@ source_buffer_index read_into_buffer(unicode_char* buffer,
     /* Maximum file size, verify that this works FIXME */
     amount = 2 << 30;
   }
-  char temporary_buffer[READ_AMOUNT]; memset(temporary_buffer, 0, READ_AMOUNT);
+  unsigned char temporary_buffer[READ_AMOUNT]; memset(temporary_buffer, 0, READ_AMOUNT);
   source_buffer_index index = 0;
   unicode_char_length buffer_index = 0;
   unicode_char character = UNICODE_NULL;
@@ -980,7 +987,7 @@ source_buffer_index read_into_buffer(unicode_char* buffer,
 }
 
 /* Checks that the BOM is correct */
-small_fast_int is_valid_bom(CONST unicode_char *buffer) {
+small_int is_valid_bom(CONST unicode_char *buffer) {
   return buffer[0] == UNICODE_BOM_32_LE;
 }
 
@@ -1020,6 +1027,50 @@ __inline__ unicode_char_length parse_element_start_tag(
   print_unicode(element->name);
   element->type = 3;
   printf("Set type to 3, %i\n", element->type);
+  return result;
+}
+
+/*
+  Function that goes down through an xml_element tree,
+  printing the contents.
+
+  FIXME, level counter type.
+*/
+
+void print_tree(struct xml_element* start, int level) {
+  char indentation[level+2]; memset(indentation,ASCII_TAB,level+1);
+  indentation[level+1] = ASCII_NULL;
+  printf("%s<", indentation);
+  if (start == start->next) {
+    FAIL("Circular pointers start->next, %i", __LINE__);
+  }
+  if (start == start->child) {
+    FAIL("Circular pointers start->child, %i", __LINE__);
+  }
+  
+  if (start->name != NULL) {
+    print_unicode(start->name);
+  } else {
+    printf("ROOT");
+  }
+  printf(">\n");
+  if (start->next != NULL) {
+    printf("start->next != NULL\n");
+    printf("print_tree, %i, %lx\n", level, (unsigned long) &start);
+    fflush(NULL);
+    print_tree(start->next, level);
+  }
+  if (start->child != NULL) {
+    printf("start->child != NULL");
+    print_tree(start->child, level+1);
+  }
+  printf("%s</", indentation);
+  if (start->name != NULL) {
+    print_unicode(start->name);
+  } else {
+    printf("ROOT");
+  }
+  printf(">\n");
 }
 
 /* For file operations */
@@ -1027,11 +1078,6 @@ __inline__ unicode_char_length parse_element_start_tag(
 
 /* Receives a file object, returns a pointer to a parsed XML document */
 struct xml_element* parse_file(FILE *file) {
-  /*
-  printf("In parse_file..\n");
-  fflush(NULL);
-  return 0;
-  */
   unicode_char *buffer = NULL;
   long file_descriptor = fileno(file);
   struct stat file_stat; fstat(file_descriptor, &file_stat);
@@ -1040,7 +1086,7 @@ struct xml_element* parse_file(FILE *file) {
   /* FIXME, right place to malloc, here or in function */
   /* file_size/4 includes BOM, which can be used for end NULL */
   buffer = malloc(sizeof(unicode_char) * (file_size/4)); memset(buffer, 0, sizeof(unicode_char) * (file_size/4));
-  small_fast_int valid_unicode = 0;
+  small_int valid_unicode = 0;
   unicode_char_length \
     characters = read_into_buffer(buffer, file_size, 0, file, &valid_unicode);
   printf("Characters: %lx\n", characters);
@@ -1052,8 +1098,9 @@ struct xml_element* parse_file(FILE *file) {
   unicode_char_length index = 0;
   unicode_char character = UNICODE_NULL;
   unicode_char look_ahead = UNICODE_NULL;
-  void *current = create_xml_element();
+  void *current = root;
   void *previous = NULL;
+  struct xml_element *closed_tag = NULL;
   for (; index < characters; index++) {
     character = read_unicode_character(buffer, index);
     /*
@@ -1065,7 +1112,7 @@ struct xml_element* parse_file(FILE *file) {
       /* Stream ended before it was expected, FIXME */
       print_unicode(buffer);
       fflush(NULL);
-      FAIL("Stream ended before it was expected in parse_file, position %lx, line %i", index, __LINE__)
+      FAIL("Stream ended before it was expected in parse_file, position %lx, line %i", index, __LINE__);
     }
     if (character == ELEMENT_STARTTAG) {
       /* Start of regular element, comment, cdata or processing instruction. */
@@ -1087,9 +1134,10 @@ struct xml_element* parse_file(FILE *file) {
 	struct xml_element *tag = current;
 	if (tag->type == 3 &&
 	    !compare_unicode_strings(tag->name, element_name)) {
+	  closed_tag = tag;
 	  printf("Found end tag\n");
 	} else {
-	  printf("");
+	  HANDLE_ERROR("End tag mismatch?, %u", index);
 	}
 	if (previous == NULL &&
 	    ((struct xml_header*)current)->parent == NULL) {
@@ -1110,22 +1158,27 @@ struct xml_element* parse_file(FILE *file) {
 	  current = new;
 	  parse_element_start_tag(buffer, look_ahead, index+2,
 				  element_end, current);
-	  /* FIXME, this is regarded as start tag handled
-	     ((struct xml_header*) current)->type = 3;
-	  */
 	  previous = current;
 	} else {
-	  small_fast_int *type = &((struct xml_header*)previous)->type;
-	  if (*type == 3) {
-	    new->parent = ((struct xml_element*) previous)->parent;
+	  small_int *previous_type = &((struct xml_header*)previous)->type;
+	  if (*previous_type == 3) {
+	    if (closed_tag != NULL) {
+	      new->previous = closed_tag;
+	      closed_tag->next = new;
+	      closed_tag = NULL;
+	    } else {
+	      new->parent = previous;
+	      ((struct xml_element*)previous)->child = new;
+	    }
 	  }
-	  else if (*type == 4) {
+	  else if (*previous_type == 4) {
+	    FAIL("Not supposed to handle type 4 yet", 0);
 	    new->parent = ((struct xml_text*) previous)->parent;
+	    new->previous = previous;
+	    ((struct xml_text*) previous)->next = new;
 	  } else {
-	    FAIL("Unexpected input for xml?->type: %i", *type)
+	    FAIL("Unexpected input for xml?->type: %i", *previous_type);
 	  }
-	  new->previous = previous;
-	  ((struct xml_element*) previous)->next = new;
 	  current = new;
 	  parse_element_start_tag(buffer, look_ahead, index+2,
 				  element_end, current);
@@ -1153,7 +1206,7 @@ struct xml_element* parse_file(FILE *file) {
 	printf("\nProcessing instruction ended at %ld\n", index);
       } else {
 	printf("The end\n");
-	FAIL("\nError, could not handle character %lx at %lx",
+	FAIL("\nError, could not handle character %ux at %ux",
 	       look_ahead, index);
       }
     }

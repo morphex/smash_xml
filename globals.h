@@ -50,10 +50,10 @@ typedef unsigned long unicode_character_variations;
 */
 
 #if __STDC_VERSION__ < 199901L
-typedef int small_fast_int;
+typedef int small_int;
 typedef unsigned int small_fast_unsigned_int; 
 #else
-typedef int_fast8_t small_fast_int; 
+typedef int_fast8_t small_int; 
 typedef uint_fast8_t small_fast_unsigned_int;
 #endif
 
@@ -136,8 +136,16 @@ typedef unsigned long unicode_char_length;
 
 #define CHAR_SIZE sizeof(char)
 
-#define FAIL(message, ...) unsigned char* _message = message;\
+#define HANDLE_ERROR(message, ...) char* _message = message;\
   char buffer[1024*1024];\
   sprintf(buffer, _message, __VA_ARGS__);\
-  printf("\n%s\n", buffer); fflush(NULL);	\
-  exit(1);
+  printf("Error: %s\n", message)
+
+#define FAIL(message, ...) char* _message = message;\
+  char buffer__abc[1024*1024];\
+  sprintf(buffer__abc, _message, __VA_ARGS__);\
+  printf("\n%s\n", buffer__abc); fflush(NULL);	\
+  exit(1)
+
+#define ASCII_TAB 9
+#define ASCII_NULL (char) 0

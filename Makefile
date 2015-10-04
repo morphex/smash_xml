@@ -1,12 +1,12 @@
 all:
-	gcc -std=c90 decode_xml.c tests.c -g -o decode_xml -I.
-	gcc -std=c90 message.c -g -o message -I.
+	gcc -std=c90 -Wall -Wno-implicit-function-declaration decode_xml.c tests.c -g -o decode_xml -I.
+#	gcc -std=c90 -Wall  message.c -g -o message -I.
 debug:
-	gcc -DDEBUG -ggdb3 -std=c90 decode_xml.c tests.c -o decode_xml -I.
-	gcc -DDEBUG -ggdb3 -std=c90 message.c -o message -I.
+	gcc -DDEBUG -Wall -ggdb3 -std=c90 decode_xml.c tests.c -o decode_xml -I.
+#	gcc -DDEBUG -Wall -ggdb3 -std=c90 message.c -o message -I.
 efence-build:
-	gcc -lefence -DDEBUG -ggdb3 -std=c90 decode_xml.c tests.c -o decode_xml -I.
-	gcc -lefence -DDEBUG -ggdb3 -std=c90 message.c -o message -I.
+	gcc -lefence -DDEBUG -Wall -ggdb3 -std=c90 decode_xml.c tests.c -o decode_xml -I.
+#	gcc -lefence -DDEBUG -Wall -ggdb3 -std=c90 message.c -o message -I.
 clean:
 	rm -f *.exe
 	rm -f *.exe.stackdump
@@ -25,4 +25,4 @@ valgrind: test
 	@echo
 	@echo "Program/Valgrind output in valgrind_out.log"
 efence: efence-build
-	./decode_xml
+	#./decode_xml

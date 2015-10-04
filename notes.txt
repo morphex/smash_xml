@@ -4,3 +4,6 @@ should support huge (> 4 GB) XML files on >= 64-bit systems.
 Figure out how to deal with characters and the buffer, whether it is
 more sensisble to "read" a unicode character once and pass it around
 or just work on the buffer.
+
+Use iteration instead of recursion for security reasons, as exhausting
+the stack has unpredictable results.
