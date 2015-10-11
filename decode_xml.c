@@ -195,18 +195,6 @@ unicode_char is_attribute_value_start(CONST unicode_char* buffer,
   }
 }
 
-/* Returns 0 if strings are equal */
-int compare_unicode_character(CONST unicode_char* buffer,
-					 CONST source_buffer_index offset,
-					 CONST unicode_char compare_to) {
-  unicode_char character = read_unicode_character(buffer, offset);
-  #ifdef DEBUG
-  printf("compare_unicode_character: %lx - %lx\n", character, compare_to);
-  #endif
-  return compare_unicode_character_char(character, compare_to);
-
-}
-
 /* Returns 0 if characters are equal */
 small_int compare_unicode_character_char(CONST unicode_char first,
 					 CONST unicode_char second) {
@@ -219,19 +207,16 @@ small_int compare_unicode_character_char(CONST unicode_char first,
   FAIL("Reached end of compare_unicode_character_char", 0);
 }
 
-
-
-/*
-  Function that compares given position in buffer to an array
-  of unicode characters.  The array is terminated by 0.
-
-  FIXME, figure out what to do if array is empty.
- */
-small_int compare_unicode_character_array(CONST unicode_char* buffer,
-					  CONST source_buffer_index offset,
-					  CONST unicode_char* compare_to) {
+/* Returns 0 if strings are equal */
+int compare_unicode_character(CONST unicode_char* buffer,
+					 CONST source_buffer_index offset,
+					 CONST unicode_char compare_to) {
   unicode_char character = read_unicode_character(buffer, offset);
-  return compare_unicode_character_array_char(character, compare_to);
+  #ifdef DEBUG
+  printf("compare_unicode_character: %lx - %lx\n", character, compare_to);
+  #endif
+  return compare_unicode_character_char(character, compare_to);
+
 }
 
 small_int compare_unicode_character_array_char(CONST unicode_char character,
@@ -269,6 +254,19 @@ small_int compare_unicode_character_array_char(CONST unicode_char character,
   }
   /* Nothing found, return -1 */
   return -1;
+}
+
+/*
+  Function that compares given position in buffer to an array
+  of unicode characters.  The array is terminated by 0.
+
+  FIXME, figure out what to do if array is empty.
+ */
+small_int compare_unicode_character_array(CONST unicode_char* buffer,
+					  CONST source_buffer_index offset,
+					  CONST unicode_char* compare_to) {
+  unicode_char character = read_unicode_character(buffer, offset);
+  return compare_unicode_character_array_char(character, compare_to);
 }
 
 /* Function that returns true if character at offset is whitespace */
@@ -365,7 +363,41 @@ unicode_char_length slice_string(CONST unicode_char* buffer,
   #endif
   return slice_index;
 }
-						  
+
+/*
+  Functions that compares buffer to a unicode string,
+  returns 0 if strings are similar, 1 if buffer has
+  a bigger character and -1 if compare_to has a bigger
+  character.
+*/
+small_int compare_unicode_string(CONST unicode_char* buffer,
+				 CONST source_buffer_index offset,
+				 CONST unicode_char* compare_to) {
+  source_buffer_index index = 0;
+  unicode_char buffer_character = UNICODE_NULL;
+
+  for (;; index++) {
+    #ifdef DEBUG
+    printf("Compare loop %c\n", (char) compare_to[index]);
+    #endif
+    if (compare_to[index] == UNICODE_NULL) {
+      /* Found terminating character, success */
+#ifdef DEBUG
+      printf("Found terminating character\n");
+#endif
+      return 0;
+    }
+    buffer_character = read_unicode_character(buffer, offset+index);
+
+    if (buffer_character == compare_to[index]) {
+      continue;
+    } else if (buffer_character > compare_to[index]) {
+      return 1;
+    } else if (buffer_character < compare_to[index]) {
+      return -1;
+    }
+  }
+}
 
 /*
   Function that runs through an attribute value, looking
@@ -440,41 +472,6 @@ source_buffer_index get_length_unicode(CONST unicode_char* string) {
       }
   }
   FAIL("Reached end of get_length_unicode without a return value %ul", index);
-}
-
-/*
-  Functions that compares buffer to a unicode string,
-  returns 0 if strings are similar, 1 if buffer has
-  a bigger character and -1 if compare_to has a bigger
-  character.
-*/
-small_int compare_unicode_string(CONST unicode_char* buffer,
-				 CONST source_buffer_index offset,
-				 CONST unicode_char* compare_to) {
-  source_buffer_index index = 0;
-  unicode_char buffer_character = UNICODE_NULL;
-
-  for (;; index++) {
-    #ifdef DEBUG
-    printf("Compare loop %c\n", (char) compare_to[index]);
-    #endif
-    if (compare_to[index] == UNICODE_NULL) {
-      /* Found terminating character, success */
-#ifdef DEBUG
-      printf("Found terminating character\n");
-#endif
-      return 0;
-    }
-    buffer_character = read_unicode_character(buffer, offset+index);
-
-    if (buffer_character == compare_to[index]) {
-      continue;
-    } else if (buffer_character > compare_to[index]) {
-      return 1;
-    } else if (buffer_character < compare_to[index]) {
-      return -1;
-    }
-  }
 }
 
 small_int compare_unicode_strings(unicode_char* first,
@@ -792,6 +789,11 @@ small_buffer_index run_element_name (CONST unicode_char* buffer,
   } while (1);
 }
 
+/* Checks that the BOM is correct */
+small_int is_valid_bom(CONST unicode_char *buffer) {
+  return buffer[0] == UNICODE_BOM_32_LE;
+}
+
 /*
 
   Reads amount of unicode characters into buffer and converts 4 byte
@@ -863,11 +865,6 @@ source_buffer_index read_into_buffer(unicode_char* buffer,
   return buffer_index;
 }
 
-/* Checks that the BOM is correct */
-small_int is_valid_bom(CONST unicode_char *buffer) {
-  return buffer[0] == UNICODE_BOM_32_LE;
-}
-
 /* Checks to see that the buffer has an uncorrupted Unicode stream */
 int is_valid_stream(CONST source_buffer_index read) {
     if (read % 4) {
@@ -914,9 +911,9 @@ unicode_char_length parse_element_start_tag(
   FIXME, level counter type.
 */
 
-void print_tree(struct xml_element* start, int level) {
-  char indentation[level+2]; memset(indentation,ASCII_TAB,level+1);
-  indentation[level+1] = ASCII_NULL;
+void print_tree(struct xml_element* start, int level, int count) {
+  char indentation[level+1]; memset(indentation,ASCII_TAB,level);
+  indentation[level] = ASCII_NULL;
   printf("%s<", indentation);
   if (start == start->next) {
     FAIL("Circular pointers start->next, %i", __LINE__);
@@ -932,14 +929,14 @@ void print_tree(struct xml_element* start, int level) {
   }
   printf(">\n");
   if (start->next != NULL) {
-    printf("start->next != NULL\n");
-    printf("print_tree, %i, %lx\n", level, (unsigned long) &start);
-    fflush(NULL);
-    print_tree(start->next, level);
+    /*    printf("start->next != NULL\n"); */
+    printf("print_tree, %i, %lx, %i\n", level, (unsigned long) &start, count);
+    /*fflush(NULL); */
+    print_tree(start->next, level, count+1);
   }
   if (start->child != NULL) {
     printf("start->child != NULL");
-    print_tree(start->child, level+1);
+    print_tree(start->child, level+1, count+1);
   }
   printf("%s</", indentation);
   if (start->name != NULL) {

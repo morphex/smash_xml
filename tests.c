@@ -227,7 +227,7 @@ int main() {
 #endif
     FILE* file = fopen("test.xml", "rb+");
     struct xml_element *result = parse_file(file);
-    print_tree(result, 0);
+    print_tree(result, 0, 0);
     fflush(NULL);
   }
   /* Various parsing tools */
