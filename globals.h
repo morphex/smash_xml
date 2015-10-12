@@ -3,10 +3,11 @@
 /* Default internal storage size for unicode characters */
 #define UNICODE_STORAGE_BYTES 4
 
-/* This handles -std=c90 on GCC, but what about other compilers? FIXME */
+/* This handles -std=c90 on GCC, but what about other compilers? FIXME
 #ifndef __GNUC__
 #define __inline__ inline
 #endif
+ */
 
 /*
   Sets the unicode_char type to be at least 32 bits.
@@ -129,20 +130,22 @@ typedef unsigned long unicode_char_length;
 
 */
 #define READ_AMOUNT 4096
-#define READ_BYTES 1024*1024*100
+#define READ_BYTES 1024*100
 #if (READ_BYTES % READ_AMOUNT)
   #error READ_BYTES must be divisible by READ_AMOUNT
 #endif
 
+/* Not necessary, in the standard sizeof(char) is always 1  
 #define CHAR_SIZE sizeof(char)
+*/
 
 #define HANDLE_ERROR(message, ...) char* _message = message;\
-  char buffer[1024*1024];\
+  char buffer[1024];\
   sprintf(buffer, _message, __VA_ARGS__);\
   printf("Error: %s\n", message)
 
 #define FAIL(message, ...) char* _message = message;\
-  char buffer__abc[1024*1024];\
+  char buffer__abc[1024];\
   sprintf(buffer__abc, _message, __VA_ARGS__);\
   printf("\n%s\n", buffer__abc); fflush(NULL);	\
   exit(1)

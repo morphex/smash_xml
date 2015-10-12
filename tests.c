@@ -202,8 +202,8 @@ int main() {
     printf("test_slice_and_length\n");
 #endif
     source_buffer_index length = get_length_unicode(buffer);
-    if (length != 1944) {
-      HANDLE_ERROR("Expected length of 1944, got %i", length);
+    if (length != 1948) {
+      HANDLE_ERROR("Expected length of 1948, got %i", length);
     }
     unicode_char *attribute = NULL;
     unicode_char_length end = 0;
@@ -227,6 +227,7 @@ int main() {
 #endif
     FILE* file = fopen("test.xml", "rb+");
     struct xml_element *result = parse_file(file);
+    fflush(NULL);
     print_tree(result, 0, 0);
     fflush(NULL);
   }
