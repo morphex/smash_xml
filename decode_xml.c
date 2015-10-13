@@ -53,6 +53,12 @@ struct xml_attribute* create_xml_attribute() {
   return my_struct;
 }
 
+void FAIL(char *message, ...) {
+  va_list argument_pointer; va_start(argument_pointer, message);
+  printf(message, argument_pointer);
+  /* FIXME, set some flag or anything */
+}
+
 unicode_char _read_unicode_character(CONST unsigned char* buffer,
 					       CONST long offset) {
   unicode_char result = (buffer[(offset)+2] << 16) +
@@ -108,7 +114,7 @@ small_int is_cdata_start(CONST unicode_char* buffer,
 }
 
 unicode_char_length find_cdata_end(CONST unicode_char* buffer,
-					      unicode_char_length offset) {
+				   unicode_char_length offset) {
   unicode_char character = UNICODE_NULL;
   do {
     character = read_unicode_character(buffer, offset);
@@ -1044,7 +1050,7 @@ struct xml_element* parse_file(FILE *file) {
 	  printf("Found end tag\n");
 #endif
 	} else {
-	  HANDLE_ERROR("End tag mismatch?, %u", index);
+	  FAIL("End tag mismatch?, %u", index);
 	}
 	if (previous == NULL &&
 	    ((struct xml_header*)current)->parent == NULL) {

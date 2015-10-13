@@ -3,6 +3,11 @@
 #include <globals.h>
 #include <decode_xml.h>
 
+void HANDLE_ERROR(char *message, ...) {
+  va_list argument_pointer; va_start(argument_pointer, message);
+  printf(message, argument_pointer);
+}
+
 int main() {
   unsigned int test_basics, test_whitespace, test_attribute,
     test_miscellaneous, test_compare, test_search, test_slice_and_length, rat,

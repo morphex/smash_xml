@@ -21,6 +21,7 @@
 */
 
 #include <limits.h>
+#include <stdarg.h>
 
 #ifndef UINT_MAX
   #error UINT_MAX not defined
@@ -138,17 +139,6 @@ typedef unsigned long unicode_char_length;
 /* Not necessary, in the standard sizeof(char) is always 1  
 #define CHAR_SIZE sizeof(char)
 */
-
-#define HANDLE_ERROR(message, ...) char* _message = message;\
-  char buffer[1024];\
-  sprintf(buffer, _message, __VA_ARGS__);\
-  printf("Error: %s\n", message)
-
-#define FAIL(message, ...) char* _message = message;\
-  char buffer__abc[1024];\
-  sprintf(buffer__abc, _message, __VA_ARGS__);\
-  printf("\n%s\n", buffer__abc); fflush(NULL);	\
-  exit(1)
 
 #define ASCII_TAB 9
 #define ASCII_NULL (char) 0

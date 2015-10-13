@@ -41,6 +41,7 @@ small_int is_equal_character(CONST unicode_char *buffer,CONST source_buffer_inde
 unicode_char safe_read_unicode_character(CONST unicode_char *buffer,CONST long offset);
 unicode_char read_unicode_character(CONST unicode_char *buffer,CONST long offset);
 unicode_char _read_unicode_character(CONST unsigned char *buffer,CONST long offset);
+void FAIL(char *message,...);
 struct xml_attribute *create_xml_attribute();
 struct xml_text *create_xml_text();
 struct xml_element *create_xml_element();
