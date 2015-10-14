@@ -231,7 +231,7 @@ int main() {
     printf("test_parse_file\n");
 #endif
     FILE* file = fopen("test.xml", "rb+");
-    struct xml_element *result = parse_file(file);
+    struct xml_item *result = parse_file(file);
     fflush(NULL);
     print_tree(result, 0, 0);
     fflush(NULL);

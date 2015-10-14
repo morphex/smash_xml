@@ -5,11 +5,6 @@
 #include <string.h>
 #include <constants.h>
 
-struct parser {
-  unicode_char *buffer;
-  unicode_char *error;
-};
-
 struct parser* create_xml_parser() {
   struct parser* my_parser = (struct parser*)malloc(sizeof(struct parser));
   my_parser->buffer = NULL;
@@ -17,39 +12,39 @@ struct parser* create_xml_parser() {
   return my_parser;
 }
 
-struct xml_element* create_xml_element() {
-  struct xml_element* my_struct = \
-    (struct xml_element*)malloc(sizeof(struct xml_element));
+struct xml_item* create_xml_element() {
+  struct xml_item* my_struct = \
+    (struct xml_item*)malloc(sizeof(struct xml_item));
   my_struct->type = 0; /* 0 means initialized, 3 means complete */
   my_struct->next = NULL;
   my_struct->parent = NULL;
   my_struct->previous = NULL;
-  my_struct->name = NULL;
-  my_struct->attributes = NULL;
-  my_struct->child = NULL;
+  my_struct->element.name = NULL;
+  my_struct->element.attributes = NULL;
+  my_struct->element.child = NULL;
   return my_struct;
 }
 
-struct xml_text* create_xml_text() {
-  struct xml_text* my_struct = \
-    (struct xml_text*)malloc(sizeof(struct xml_text));
+struct xml_item* create_xml_text() {
+  struct xml_item* my_struct = \
+    (struct xml_item*)malloc(sizeof(struct xml_item)-(sizeof(void*)*2));
   my_struct->type = 1; /* 1 means initialized, 4 means complete */
   my_struct->next = NULL;
   my_struct->parent = NULL;
   my_struct->previous = NULL;
-  my_struct->characters = NULL;
+  my_struct->text.characters = NULL;
   return my_struct;
 }
 
-struct xml_attribute* create_xml_attribute() {
-  struct xml_attribute* my_struct = \
-    (struct xml_attribute*)malloc(sizeof(struct xml_attribute));
+struct xml_item* create_xml_attribute() {
+  struct xml_item* my_struct = \
+    (struct xml_item*)malloc(sizeof(struct xml_item)-sizeof(void*));
   my_struct->type = 2; /* 2 means initialized, 5 means complete */
   my_struct->next = NULL;
   my_struct->parent = NULL;
   my_struct->previous = NULL;
-  my_struct->name = NULL;
-  my_struct->characters = NULL;
+  my_struct->attribute.name = NULL;
+  my_struct->attribute.content = NULL;
   return my_struct;
 }
 
@@ -898,7 +893,7 @@ unicode_char_length parse_element_start_tag(
   */
   unicode_char *element_name = NULL;
   small_buffer_index result = 0;
-  struct xml_element *element = current;
+  struct xml_item *element = current;
   result = run_element_name(buffer, offset-1, end, &element_name);
   if (result == 0) {
     FAIL("run_element_name result 0\n", 0);
@@ -906,7 +901,7 @@ unicode_char_length parse_element_start_tag(
 #ifdef DEBUG
   print_unicode(element_name);
 #endif
-  element->name = element_name;
+  element->element.name = element_name;
 #ifdef DEBUG
   printf("In parse_element_start_tag..\n");
   print_unicode(element->name);
@@ -919,13 +914,13 @@ unicode_char_length parse_element_start_tag(
 }
 
 /*
-  Function that goes down through an xml_element tree,
+  Function that goes down through an xml_item tree,
   printing the contents.
 
   FIXME, level counter type.
 */
 
-void print_tree(struct xml_element* start, int level, int count) {
+void print_tree(struct xml_item* start, int level, int count) {
   char indentation[level+1]; memset(indentation,ASCII_TAB,level);
   indentation[level] = ASCII_NULL;
   if (start->previous == NULL && 0) {
@@ -936,44 +931,44 @@ void print_tree(struct xml_element* start, int level, int count) {
   if (start == start->next) {
     FAIL("Circular pointers start->next, %i", __LINE__);
   }
-  if (start == start->child) {
+  if (start == start->element.child) {
     FAIL("Circular pointers start->child, %i", __LINE__);
   }
   
-  if (start->name != NULL) {
-    print_unicode(start->name);
+  if (start->element.name != NULL) {
+    print_unicode(start->element.name);
   } else {
     printf("ROOT");
   }
   /* FIXME, indentation that preserves whitespace */
-  if (start->child != NULL) {
+  if (start->element.child != NULL) {
     printf("\n%s>", indentation);
   } else {
     printf(">");
   }
   if (start->next != NULL) {
     printf("</");
-    print_unicode(start->name);
+    print_unicode(start->element.name);
     printf("\n%s>", indentation);
 #ifdef DEBUG
     printf("print_tree, %i, %lx, %i\n", level, (unsigned long) &start, count);
 #endif
     print_tree(start->next, level, count+1);
-  } else if (start->child != NULL) {
+  } else if (start->element.child != NULL) {
 #ifdef DEBUG
     printf("start->child != NULL");
 #endif
-    print_tree(start->child, level+1, count+1);
+    print_tree(start->element.child, level+1, count+1);
   }
   else {
     printf("</");
-    print_unicode(start->name);
+    print_unicode(start->element.name);
     printf(">\n");    
   }
-  if (start->name != NULL && start->parent->parent &&
+  if (start->element.name != NULL && start->parent->parent &&
       start->previous == NULL) {
     printf("%s</", indentation);
-    print_unicode(start->parent->name);
+    print_unicode(start->parent->element.name);
     printf(">\n");
   } else if (start->parent == NULL) {
     printf("%s</ROOT>\n", indentation);
@@ -984,12 +979,12 @@ void print_tree(struct xml_element* start, int level, int count) {
 #include <sys/stat.h>
 
 /* Receives a file object, returns a pointer to a parsed XML document */
-struct xml_element* parse_file(FILE *file) {
+struct xml_item* parse_file(FILE *file) {
   unicode_char *buffer = NULL;
   long file_descriptor = fileno(file);
   struct stat file_stat; fstat(file_descriptor, &file_stat);
   source_buffer_index file_size = file_stat.st_size;
-  struct xml_element *root = create_xml_element();
+  struct xml_item *root = create_xml_element();
   /* FIXME, right place to malloc, here or in function */
   /* file_size/4 includes BOM, which can be used for end NULL */
   buffer = malloc(sizeof(unicode_char) * (file_size/4)); memset(buffer, 0, sizeof(unicode_char) * (file_size/4));
@@ -1005,9 +1000,9 @@ struct xml_element* parse_file(FILE *file) {
   unicode_char_length index = 0;
   unicode_char character = UNICODE_NULL;
   unicode_char look_ahead = UNICODE_NULL;
-  void *current = root;
-  void *previous = NULL;
-  struct xml_element *closed_tag = NULL;
+  struct xml_item *current = root;
+  struct xml_item *previous = NULL;
+  struct xml_item *closed_tag = NULL;
   for (; index < characters; index++) {
     character = read_unicode_character(buffer, index);
     /*
@@ -1042,9 +1037,9 @@ struct xml_element* parse_file(FILE *file) {
 #ifdef DEBUG
 	printf("\n");
 #endif
-	struct xml_element *tag = current;
+	struct xml_item *tag = current;
 	if (tag->type == 3 &&
-	    !compare_unicode_strings(tag->name, element_name)) {
+	    !compare_unicode_strings(tag->element.name, element_name)) {
 	  closed_tag = tag;
 #ifdef DEBUG
 	  printf("Found end tag\n");
@@ -1052,8 +1047,7 @@ struct xml_element* parse_file(FILE *file) {
 	} else {
 	  FAIL("End tag mismatch?, %u", index);
 	}
-	if (previous == NULL &&
-	    ((struct xml_header*)current)->parent == NULL) {
+	if (previous == NULL && current->parent == NULL) {
 	  /* Found an end tag without a start tag */
 	  FAIL("End tag without start tag found at %lx", index);
 	}
@@ -1070,16 +1064,16 @@ struct xml_element* parse_file(FILE *file) {
 	printf("Look ahead: %lx\n", (unsigned long) look_ahead);
 #endif
 	unicode_char_length element_end = find_element_endtag(buffer, index+2);
-	struct xml_element *new = create_xml_element();
+	struct xml_item *new = create_xml_element();
 	if (previous == NULL) {
-	  ((struct xml_element*)current)->child = new;
+	  current->element.child = new;
 	  new->parent = current;
 	  current = new;
 	  parse_element_start_tag(buffer, look_ahead, index+2,
 				  element_end, current);
 	  previous = current;
 	} else {
-	  small_int *previous_type = &((struct xml_header*)previous)->type;
+	  small_int *previous_type = &previous->type;
 	  if (*previous_type == 3) {
 	    if (closed_tag != NULL) {
 	      new->previous = closed_tag;
@@ -1088,14 +1082,14 @@ struct xml_element* parse_file(FILE *file) {
 	      closed_tag = NULL;
 	    } else {
 	      new->parent = previous;
-	      ((struct xml_element*)previous)->child = new;
+	      previous->element.child = new;
 	    }
 	  }
 	  else if (*previous_type == 4) {
 	    FAIL("Not supposed to handle type 4 yet", 0);
-	    new->parent = ((struct xml_text*) previous)->parent;
+	    new->parent = previous->parent;
 	    new->previous = previous;
-	    ((struct xml_text*) previous)->next = new;
+	    previous->next = new;
 	  } else {
 	    FAIL("Unexpected input for xml?->type: %i", *previous_type);
 	  }

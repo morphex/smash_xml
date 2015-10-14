@@ -143,64 +143,26 @@ typedef unsigned long unicode_char_length;
 #define ASCII_TAB 9
 #define ASCII_NULL (char) 0
 
-
-/*
-  xml_element can be <!--..--!>, <![CDATA[..]]>, <?..?>) or a regular element.
-*/
-
-struct xml_element {
+struct xml_item {
   small_int type;
-  /*
-    Could be xml_element or xml_text
-  */
-  void *next;
-  struct xml_element *parent;
-  void *previous;
-  unicode_char *name;
-  struct xml_attribute *attributes;
-  void *child; 
-};
+  struct xml_item *parent, *next, *previous;
 
-/*
-  Regular XML text data.
-*/
+  union {
+    struct xml_element {
+      unicode_char *name;
+      struct xml_attribute *attributes;
+      struct xml_item *child;
+    } element;
 
-struct xml_text {
-  small_int type;
-  /*
-    The only next element after XML text could be, is an xml_element.
-  */
-  struct xml_element *next;
-  struct xml_element *parent;
-  struct xml_element *previous;
-  unicode_char *characters;
-};
+    struct xml_attribute {
+      unicode_char *name, *content;
+    } attribute;
 
-/*
-  xml_element attributes.
-*/
-
-struct xml_attribute {
-  small_int type;
-  struct xml_attribute *next;
-  struct xml_element *parent;
-  void *previous;
-  unicode_char *name;
-  unicode_char *characters;
-};
-
-/*
-  Used to deal with xml_* structs before the type is known.
-
-  If parent is NULL, it is the root element.
-*/
-
-struct xml_header {
-  small_int type;
-  void *next;
-  struct xml_element *parent;
-  void *previous;
-};
+    struct xml_text {
+      unicode_char *characters;
+    } text;
+  };
+}; 
 
 /* 
    Used to deal with the buffer and parsing state.
@@ -216,4 +178,9 @@ struct xml_header {
 
    FIXME, check atomic updates in threads.
 */
+
+struct parser {
+  unicode_char *buffer;
+  unicode_char *error;
+};
 
