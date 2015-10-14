@@ -1073,8 +1073,7 @@ struct xml_item* parse_file(FILE *file) {
 				  element_end, current);
 	  previous = current;
 	} else {
-	  small_int *previous_type = &previous->type;
-	  if (*previous_type == 3) {
+	  if (previous->type == 3) {
 	    if (closed_tag != NULL) {
 	      new->previous = closed_tag;
 	      closed_tag->next = new;
@@ -1085,13 +1084,13 @@ struct xml_item* parse_file(FILE *file) {
 	      previous->element.child = new;
 	    }
 	  }
-	  else if (*previous_type == 4) {
+	  else if (previous->type == 4) {
 	    FAIL("Not supposed to handle type 4 yet", 0);
 	    new->parent = previous->parent;
 	    new->previous = previous;
 	    previous->next = new;
 	  } else {
-	    FAIL("Unexpected input for xml?->type: %i", *previous_type);
+	    FAIL("Unexpected input for xml?->type: %i", previous->type);
 	  }
 	  current = new;
 	  parse_element_start_tag(buffer, look_ahead, index+2,
