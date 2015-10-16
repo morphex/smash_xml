@@ -48,10 +48,11 @@ struct xml_item* create_xml_attribute() {
   return my_struct;
 }
 
-void FAIL(char *message, ...) {
+int FAIL(char *message, ...) {\
   va_list argument_pointer; va_start(argument_pointer, message);
   printf(message, argument_pointer);
   /* FIXME, set some flag or anything */
+  return 0;
 }
 
 unicode_char _read_unicode_character(CONST unsigned char* buffer,
@@ -59,9 +60,7 @@ unicode_char _read_unicode_character(CONST unsigned char* buffer,
   unicode_char result = (buffer[(offset)+2] << 16) +
     (buffer[(offset)+1] << 8) +
     buffer[(offset)+0];
-  #ifdef DEBUG
-  printf("Char: %lx\t", result);
-  #endif
+  DEBUG_PRINT("Char: %lx\t", result);
   return result;
 }
 
@@ -123,7 +122,7 @@ unicode_char_length find_cdata_end(CONST unicode_char* buffer,
     }
     offset++;
   } while (character != UNICODE_NULL);
-  FAIL("Reached end of find_cdata_end, %lx", offset);
+  return FAIL("Reached end of find_cdata_end, %lx", offset);
 }
 
 unicode_char_length find_comment_end(CONST unicode_char* buffer,
@@ -140,7 +139,7 @@ unicode_char_length find_comment_end(CONST unicode_char* buffer,
     }
     offset++;
   } while (character != UNICODE_NULL);
-  FAIL("Reached end of find_comment_end, %lx", offset);
+  return FAIL("Reached end of find_comment_end, %lx", offset);
 }
 
 unicode_char_length find_element_endtag				\
@@ -153,7 +152,7 @@ unicode_char_length find_element_endtag				\
     }
     offset++;
   } while (character != UNICODE_NULL);
-  FAIL("Reached end of find_element_endtag, %lx", offset);
+  return FAIL("Reached end of find_element_endtag, %lx", offset);
 }
 
 unicode_char_length find_processing_instruction_end		\
@@ -168,15 +167,13 @@ unicode_char_length find_processing_instruction_end		\
     }
     offset++;
   } while (character != UNICODE_NULL);
-  FAIL("Could not find end of processing instruction, %lx", offset);
+  return FAIL("Could not find end of processing instruction, %lx", offset);
 }
 
 small_int is_comment_start(CONST unicode_char* buffer,
 					   unicode_char_length offset) {
-#ifdef DEBUG
-  printf("ics: %lx\n", read_unicode_character(buffer, offset));
-  printf("ics: %lx\n", read_unicode_character(buffer, offset+1));
-#endif
+  DEBUG_PRINT("ics: %lx\n", read_unicode_character(buffer, offset));
+  DEBUG_PRINT("ics: %lx\n", read_unicode_character(buffer, offset+1));
   return read_unicode_character(buffer, offset) == HYPHEN &&
     read_unicode_character(buffer, offset+1) == HYPHEN;
 }
@@ -205,7 +202,7 @@ small_int compare_unicode_character_char(CONST unicode_char first,
     return 1;
   if (first < second)
     return -1;
-  FAIL("Reached end of compare_unicode_character_char", 0);
+  return FAIL("Reached end of compare_unicode_character_char", 0);
 }
 
 /* Returns 0 if strings are equal */
@@ -213,9 +210,7 @@ int compare_unicode_character(CONST unicode_char* buffer,
 					 CONST source_buffer_index offset,
 					 CONST unicode_char compare_to) {
   unicode_char character = read_unicode_character(buffer, offset);
-  #ifdef DEBUG
-  printf("compare_unicode_character: %lx - %lx\n", character, compare_to);
-  #endif
+  DEBUG_PRINT("compare_unicode_character: %lx - %lx\n", character, compare_to);
   return compare_unicode_character_char(character, compare_to);
 
 }
@@ -227,10 +222,8 @@ small_int compare_unicode_character_array_char(CONST unicode_char character,
   unicode_char current_comparison = NULL;
   while (1) {
     current_comparison = compare_to[index];
-    #ifdef DEBUG
-      printf("compare_unicode_character_array: %c - %c\n",
-	     (char) character, (char) current_comparison);
-    #endif
+    DEBUG_PRINT("compare_unicode_character_array: %c - %c\n",
+		(char) character, (char) current_comparison);
     if (current_comparison == UNICODE_NULL) {
       /* No match found */
       break;
@@ -240,16 +233,12 @@ small_int compare_unicode_character_array_char(CONST unicode_char character,
 	A return value of 0 or more means success.
 	return offset + (index*UNICODE_STORAGE_BYTES);
       */
-      #ifdef DEBUG
-      printf("compare_unicode_character_array: %ix - %ix\n",
-	     character, current_comparison);
-      #endif
+      DEBUG_PRINT("compare_unicode_character_array: %ix - %ix\n",
+		  character, current_comparison);
       return index;
     } else {
-      #ifdef DEBUG
-      printf("miss compare_unicode_character_array: %ix - %ix\n",
+      DEBUG_PRINT("miss compare_unicode_character_array: %ix - %ix\n",
 	     character, current_comparison);
-      #endif
       index++;
     }
   }
@@ -289,9 +278,7 @@ source_buffer_index run_whitespace(CONST unicode_char* buffer,
   unicode_char character = 0;
   do {
     character = read_unicode_character(buffer, offset+index);
-    #ifdef DEBUG
-    printf("run_whitespace character: %lx\n", character);
-    #endif
+    DEBUG_PRINT("run_whitespace character: %lx\n", character);
     if (character == UNICODE_NULL) {
       return offset + (index-1);
     }
@@ -308,9 +295,7 @@ source_buffer_index run_whitespace(CONST unicode_char* buffer,
   Prints unicode_char array.
 */
 void print_unicode(CONST unicode_char* buffer) {
-#ifdef DEBUG
-  printf("print_unicode: %lx\n", (unsigned long) &buffer);
-#endif
+  DEBUG_PRINT("print_unicode: %lx\n", (unsigned long) &buffer);
   unicode_char_length index = 0;
   while (buffer[index] != UNICODE_NULL) {
     printf("%c", (char) buffer[index]);
@@ -320,11 +305,11 @@ void print_unicode(CONST unicode_char* buffer) {
   printf("  ");
   index = 0;
   while (buffer[index] != UNICODE_NULL) {
-    printf("%lx,", (unsigned long) buffer[index]);
+    DEBUG_PRINT("%lx,", (unsigned long) buffer[index]);
     index++;
   }
-  printf("\nindex %i\n", index);
-  printf("\nend print_unicode\n");
+  DEBUG_PRINT("\nindex %i\n", index);
+  DEBUG_PRINT("\nend print_unicode\n", 0);
 #endif
 }
 
@@ -349,9 +334,7 @@ unicode_char_length slice_string(CONST unicode_char* buffer,
   unicode_char_length slice_index = 0;
   for (; start <= stop; start++) {
     unicode_char character = read_unicode_character(buffer, start);
-    #ifdef DEBUG
-    printf("1 loop %c\t", (char)character);
-    #endif
+    DEBUG_PRINT("1 loop %c\t", (char)character);
     /* Found NULL before reaching 'stop', maybe realloc? */
     if (character == UNICODE_NULL) {
       break;
@@ -361,9 +344,7 @@ unicode_char_length slice_string(CONST unicode_char* buffer,
   }
   local_slice[slice_index] = UNICODE_NULL;
   *slice = local_slice;
-  #ifdef DEBUG
-  printf("\nSlice index: %i,allocate_bytes %i\n", slice_index, allocate_bytes);
-  #endif
+  DEBUG_PRINT("\nSlice index: %i,allocate_bytes %i\n", slice_index, allocate_bytes);
   return slice_index;
 }
 
@@ -380,14 +361,10 @@ small_int compare_unicode_string(CONST unicode_char* buffer,
   unicode_char buffer_character = UNICODE_NULL;
 
   for (;; index++) {
-    #ifdef DEBUG
-    printf("Compare loop %c\n", (char) compare_to[index]);
-    #endif
+    DEBUG_PRINT("Compare loop %c\n", (char) compare_to[index]);
     if (compare_to[index] == UNICODE_NULL) {
       /* Found terminating character, success */
-#ifdef DEBUG
-      printf("Found terminating character\n");
-#endif
+      DEBUG_PRINT("Found terminating character\n", 0);
       return 0;
     }
     buffer_character = read_unicode_character(buffer, offset+index);
@@ -415,15 +392,11 @@ source_buffer_index run_attribute_value(CONST unicode_char* buffer,
 					CONST unicode_char end_quote) {
   int index = 0;
   unicode_char character = UNICODE_NULL;
-  #ifdef DEBUG
-  printf("In run_attribute_value\n");
-  printf("Quote: %c\n", (char) end_quote);
-  #endif
+  DEBUG_PRINT("In run_attribute_value\n", 0);
+  DEBUG_PRINT("Quote: %c\n", (char) end_quote);
   do {
     character = read_unicode_character(buffer, offset+index);
-    #ifdef DEBUG
-    printf("Character: %c\n", (char) character);
-    #endif
+    DEBUG_PRINT("Character: %c\n", (char) character);
     if (character == UNICODE_NULL) {
       return 0;
     } else if (character == end_quote) {
@@ -464,7 +437,7 @@ source_buffer_index get_length(CONST char* string) {
 	return index;
     }
   }
-  FAIL("Reached end of get_length without a return value %ul", index);
+  return FAIL("Reached end of get_length without a return value %ul", index);
 }
 
 source_buffer_index get_length_unicode(CONST unicode_char* string) {
@@ -474,7 +447,7 @@ source_buffer_index get_length_unicode(CONST unicode_char* string) {
 	return index;
       }
   }
-  FAIL("Reached end of get_length_unicode without a return value %ul", index);
+  return FAIL("Reached end of get_length_unicode without a return value %ul", index);
 }
 
 small_int compare_unicode_strings(unicode_char* first,
@@ -496,16 +469,12 @@ source_buffer_index run_unicode_string \
   unicode_char character = UNICODE_NULL;
   for (;; index++) {
     character = read_unicode_character(buffer, offset+index);
-    #ifdef DEBUG
-    printf("Position %lx Char %lx %c\n", offset+index, character,
+    DEBUG_PRINT("Position %lx Char %lx %c\n", offset+index, character,
 	   (char) character);
-    #endif
     if (character == UNICODE_NULL) {
       return 0;
     } else if (character == compare_to[0]) {
-      #ifdef DEBUG
-      printf("\tFound matching character at %i\n", index);
-      #endif
+      DEBUG_PRINT("\tFound matching character at %i\n", index);
       if (compare_unicode_string(buffer, offset+index, compare_to) ==
 	  UNICODE_NULL) {
 	  return offset + index;
@@ -562,9 +531,7 @@ small_int validate_unicode_xml_1(CONST unicode_char* buffer,
 small_int is_name_start_character_char(CONST unicode_char character) {
   if (compare_unicode_character_array_char(character,
 		      name_start_character_single_characters) >= 0) {
-    #ifdef DEBUG
-    printf("name_start_character 1\n");
-    #endif
+    DEBUG_PRINT("name_start_character 1\n", 0);
     return 1;
   }
   if ((character >= 0x0061 && character <= 0x007A) || /* [a-z] */
@@ -602,25 +569,19 @@ small_int is_name_start_character(CONST unicode_char* buffer,
 small_int is_name_character(CONST unicode_char* buffer,
 			    CONST source_buffer_index offset) {
   if (is_name_start_character(buffer, offset)) {
-    #ifdef DEBUG
-    printf("name start 1\n");
-    #endif
+    DEBUG_PRINT("name start 1\n", 0);
     return 1;
   }
   if (compare_unicode_character_array(buffer, offset,
 				      name_character_single_characters) >= 0) {
-    #ifdef DEBUG
-    printf("name start 2\n");
-    #endif
+    DEBUG_PRINT("name start 2\n", 0);
     return 1;
   }
   unicode_char character = read_unicode_character(buffer, offset);
   if ((character >= 0x0030 && character <= 0x0039) || /* [0-9] */
       (character >= 0x0300 && character <= 0x036F) || /* [#x300-#x36F] */
       (character >= 0x203F && character <= 0x2040)) { /* [#x203F-#x2040] */
-    #ifdef DEBUG
-    printf("name start 3\n");
-    #endif
+    DEBUG_PRINT("name start 3\n", 0);
     return 1;
   }
   return 0;
@@ -683,9 +644,7 @@ small_buffer_index run_attribute_name\
   */
   source_buffer_index index = 0;
   unicode_char character = 0;
-  #ifdef DEBUG
-  printf("In run_attribute_name..\n");
-  #endif
+  DEBUG_PRINT("In run_attribute_name..\n", 0);
   do {
     if (index > MAXIMUM_NAME_SIZE) {
       /* Attribute name is too long */
@@ -694,26 +653,19 @@ small_buffer_index run_attribute_name\
     }
     character = read_unicode_character(buffer, position+index);
     if (is_name_character(buffer, position+index)) {
-      #ifdef DEBUG
-      printf("Address: %lx\n", &attribute[index]);
-      #endif
+      DEBUG_PRINT("Address: %lx\n", &attribute[index]);
       attribute_storage[index] = character;
       index++;
-      #ifdef DEBUG
-      printf("Copied a char..%lx %c %i %c\n", character, (char)character,
-	     index, attribute_storage[index]);
-      #endif
+      DEBUG_PRINT("Copied a char..%lx %c %lx %lx\n", character,
+		  (char)character,
+		  index, attribute_storage[index]);
     } else if (!is_equal_character(buffer, position+index)) {
       /* Invalid character found */
-      #ifdef DEBUG
-      printf("Invalid character found..\n");
-      #endif
+      DEBUG_PRINT("Invalid character found..\n", 0);
       free(attribute_storage); attribute_storage = NULL;
       return -3;
     } else {
-      #ifdef DEBUG
-      printf("Success, reallocating memory..\n");
-      #endif
+      DEBUG_PRINT("Success, reallocating memory..\n", 0);
       attribute_storage[index+1] = UNICODE_NULL;
       attribute_storage = realloc(attribute_storage,
 				  (sizeof(unicode_char)*(index+1)));
@@ -749,9 +701,7 @@ small_buffer_index run_element_name (CONST unicode_char* buffer,
   }
   source_buffer_index index = 0;
   unicode_char character = 0;
-  #ifdef DEBUG
-  printf("In run_element_name..\n");
-  #endif
+  DEBUG_PRINT("In run_element_name..\n", 0);
   do {
     if (index > MAXIMUM_NAME_SIZE) {
       /* Element name is too long */
@@ -760,26 +710,18 @@ small_buffer_index run_element_name (CONST unicode_char* buffer,
     }
     character = read_unicode_character(buffer, position+index);
     if (is_name_character(buffer, position+index)) {
-      #ifdef DEBUG
-      printf("Address: %lx\n", &element_name_storage[index]);
-      #endif
+      DEBUG_PRINT("Address: %lx\n", &element_name_storage[index]);
       element_name_storage[index] = character;
       index++;
-      #ifdef DEBUG
-      printf("Copied a char..%lx %c %i %c\n", character, (char)character,
-	     index, element_name_storage[index]);
-      #endif
+      DEBUG_PRINT("Copied a char..%lx %c %lx\n", character,
+		  (char)character, element_name_storage[index]);
     } else if (!is_whitespace(buffer, position+index) && (position+index) < end) {
       /* Invalid character found */
-      #ifdef DEBUG
-      printf("Invalid character found..\n");
-      #endif
+      DEBUG_PRINT("Invalid character found..\n", 0);
       free(element_name_storage); element_name_storage = NULL;
       return 0;
     } else {
-      #ifdef DEBUG
-      printf("Success, reallocating memory..\n");
-      #endif
+      DEBUG_PRINT("Success, reallocating memory..\n", 0);
       element_name_storage[index+1] = UNICODE_NULL;
       element_name_storage = realloc(element_name_storage,
 				  (sizeof(unicode_char)*(index+1)));
@@ -818,9 +760,7 @@ source_buffer_index read_into_buffer(unicode_char* buffer,
   source_buffer_index read = 4; /* BOM */
   source_buffer_index read_temporary = 0;
   if (!is_valid_bom(bom)) {
-    #ifdef DEBUG
-    printf("Is valid BOM: %i\n", is_valid_bom(bom));
-    #endif
+    DEBUG_PRINT("Is valid BOM: %i\n", is_valid_bom(bom));
     *valid_unicode = 0;
     return read;
   }
@@ -833,14 +773,10 @@ source_buffer_index read_into_buffer(unicode_char* buffer,
   source_buffer_index index = 0;
   unicode_char_length buffer_index = 0;
   unicode_char character = UNICODE_NULL;
-  #ifdef DEBUG
-  printf("1: %i,%u,%i,%i\n", read, amount, buffer_index, size);
-  #endif
+  DEBUG_PRINT("1: %lx,%lx,%lx,%lx\n", read, amount, buffer_index, size);
   for (; read < size && buffer_index < amount; read += READ_AMOUNT) {
     read_temporary = fread(temporary_buffer, sizeof(char), READ_AMOUNT, file);
-    #ifdef DEBUG
-    printf("2: %i\n", read_temporary);
-    #endif
+    DEBUG_PRINT("2: %i\n", read_temporary);
     for (index = 0; index < read_temporary; index+=4) {
       character = _read_unicode_character(temporary_buffer, index);
       buffer[buffer_index] = character;
@@ -896,20 +832,14 @@ unicode_char_length parse_element_start_tag(
   struct xml_item *element = current;
   result = run_element_name(buffer, offset-1, end, &element_name);
   if (result == 0) {
-    FAIL("run_element_name result 0\n", 0);
+    return FAIL("run_element_name result 0\n", 0);
   }
-#ifdef DEBUG
-  print_unicode(element_name);
-#endif
+  DEBUG_PRINT(element_name, 0);
   element->element.name = element_name;
-#ifdef DEBUG
-  printf("In parse_element_start_tag..\n");
-  print_unicode(element->name);
-#endif
+  DEBUG_PRINT("In parse_element_start_tag..\n", 0);
+  print_unicode(element->element.name);
   element->type = 3;
-#ifdef DEBUG
-  printf("Set type to 3, %i\n", element->type);
-#endif
+  DEBUG_PRINT("Set type to 3, %i\n", element->type);
   return result;
 }
 
@@ -950,14 +880,10 @@ void print_tree(struct xml_item* start, int level, int count) {
     printf("</");
     print_unicode(start->element.name);
     printf("\n%s>", indentation);
-#ifdef DEBUG
-    printf("print_tree, %i, %lx, %i\n", level, (unsigned long) &start, count);
-#endif
+    DEBUG_PRINT("print_tree, %i, %lx, %i\n", level, (unsigned long) &start, count);
     print_tree(start->next, level, count+1);
   } else if (start->element.child != NULL) {
-#ifdef DEBUG
-    printf("start->child != NULL");
-#endif
+    DEBUG_PRINT("start->child != NULL", 0);
     print_tree(start->element.child, level+1, count+1);
   }
   else {
@@ -1030,20 +956,14 @@ struct xml_item* parse_file(FILE *file) {
 	unicode_char_length end = find_element_endtag(buffer, index+2);
 	unicode_char* element_name = NULL;
 	run_element_name(buffer, index+2, end, &element_name);
-#ifdef DEBUG
-	printf("Element name: ");
-#endif
+	DEBUG_PRINT("Element name: ", 0);
 	print_unicode(element_name);
-#ifdef DEBUG
-	printf("\n");
-#endif
+	DEBUG_PRINT("\n", 0);
 	struct xml_item *tag = current;
 	if (tag->type == 3 &&
 	    !compare_unicode_strings(tag->element.name, element_name)) {
 	  closed_tag = tag;
-#ifdef DEBUG
-	  printf("Found end tag\n");
-#endif
+	  DEBUG_PRINT("Found end tag\n", 0);
 	} else {
 	  FAIL("End tag mismatch?, %u", index);
 	}
@@ -1051,18 +971,12 @@ struct xml_item* parse_file(FILE *file) {
 	  /* Found an end tag without a start tag */
 	  FAIL("End tag without start tag found at %lx", index);
 	}
-#ifdef DEBUG
-	printf("\nEnd of element section\n");
-#endif
+	DEBUG_PRINT("\nEnd of element section\n", 0);
 	index = end;
-#ifdef DEBUG
-	printf("End of element endtag: %ld\n", index);
-#endif
+	DEBUG_PRINT("End of element endtag: %ld\n", index);
       } else if (is_name_start_character_char(look_ahead)) {
 	/* Regular element section */
-#ifdef DEBUG
-	printf("Look ahead: %lx\n", (unsigned long) look_ahead);
-#endif
+	DEBUG_PRINT("Look ahead: %lx\n", (unsigned long) look_ahead);
 	unicode_char_length element_end = find_element_endtag(buffer, index+2);
 	struct xml_item *new = create_xml_element();
 	if (previous == NULL) {
@@ -1098,45 +1012,27 @@ struct xml_item* parse_file(FILE *file) {
 	  previous = current;
 	}
 	index = element_end;
-#ifdef DEBUG
-	printf("\nYay, regular, %lx", index);
-#endif
+	DEBUG_PRINT("\nYay, regular, %lx", index);
       } else if (is_exclamation_mark_char(look_ahead)) {
-#ifdef DEBUG
-	printf("\nExclamation mark!");
-#endif
+	DEBUG_PRINT("\nExclamation mark!", 0);
 	if (is_cdata_start(buffer, index+2)) {
-#ifdef DEBUG	 
-	  printf("\nIs CDATA");
-#endif
+	  DEBUG_PRINT("\nIs CDATA", 0);
 	  index = find_cdata_end(buffer, index+2+5);
-#ifdef DEBUG
-	  printf("\nCDATA end was %ld\n", index);
-#endif
+	  DEBUG_PRINT("\nCDATA end was %ld\n", index);
 	} else if (is_comment_start(buffer, index+2)) {
-#ifdef DEBUG
-	  printf("\nIs comment");
-#endif
+	  DEBUG_PRINT("\nIs comment", 0);
 	  index = find_comment_end(buffer, index+2);
-#ifdef DEBUG
-	  printf("\nComment end was %ld\n", index);
-#endif
+	  DEBUG_PRINT("\nComment end was %ld\n", index);
 	} else {
 	  /* Unknown (invalid) XML */
 	  FAIL("Invalid XML, exclamation mark, %lx\n", index);
 	}
       } else if (is_question_mark_char(look_ahead)) {
-#ifdef DEBUG
-	printf("\nIs question mark");
-#endif
+	DEBUG_PRINT("\nIs question mark",0);
 	index = find_processing_instruction_end(buffer, index+2);
-#ifdef DEBUG
-	printf("\nProcessing instruction ended at %ld\n", index);
-#endif
+	DEBUG_PRINT("\nProcessing instruction ended at %ld\n", index);
       } else {
-#ifdef DEBUG
-	printf("The end\n");
-#endif
+	DEBUG_PRINT("The end\n", 0);
 	FAIL("\nError, could not handle character %ux at %ux",
 	       look_ahead, index);
       }

@@ -184,3 +184,10 @@ struct parser {
   unicode_char *error;
 };
 
+#ifdef DEBUG
+#ifndef DEBUG_PRINT
+#define DEBUG_PRINT(message, ...) printf(message, __VA_ARGS__)
+#endif
+#else
+#define DEBUG_PRINT(message, ...) ((void)0)
+#endif

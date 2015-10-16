@@ -7,7 +7,7 @@ all:
 debug:
 	gcc makeheaders.c -o makeheaders
 	./makeheaders decode_xml.c
-	gcc -DDEBUG -Wall -ggdb3 -std=c90 decode_xml.c tests.c -o decode_xml -I.
+	gcc -DDEBUG  -Wall -Wno-format-extra-args -ggdb3 -std=c90 decode_xml.c tests.c -o decode_xml -I.
 #	gcc -DDEBUG -Wall -ggdb3 -std=c90 message.c -o message -I.
 efence-build:
 	gcc makeheaders.c -o makeheaders
