@@ -889,15 +889,15 @@ void print_tree(struct xml_item* start, int level, int count) {
   else {
     printf("</");
     print_unicode(start->element.name);
-    printf(">\n");    
+    printf("\n%s>", indentation);    
   }
   if (start->element.name != NULL && start->parent->parent &&
       start->previous == NULL) {
-    printf("%s</", indentation);
+    printf("</");
     print_unicode(start->parent->element.name);
-    printf(">\n");
+    printf("\n>");
   } else if (start->parent == NULL) {
-    printf("%s</ROOT>\n", indentation);
+    printf("</ROOT>\n");
   }
 }
 
