@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-void *pointers[8] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+const void *pointers[8] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 
 int main() {
   void *pointer = pointers+2;

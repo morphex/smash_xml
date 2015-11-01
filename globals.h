@@ -164,6 +164,11 @@ struct xml_item {
   };
 }; 
 
+struct xml_stack {
+  struct xml_item *element;
+  struct xml_stack *previous;
+};
+
 /* 
    Used to deal with the buffer and parsing state.
 

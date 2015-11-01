@@ -5,6 +5,14 @@
 #include <string.h>
 #include <constants.h>
 
+int FAIL(char *message, ...) {\
+  va_list argument_pointer; va_start(argument_pointer, message);
+  printf(message, argument_pointer);
+  /* FIXME, set some flag or anything */
+  exit(1);
+  return NULL;
+}
+
 struct parser* create_xml_parser() {
   struct parser* my_parser = (struct parser*)malloc(sizeof(struct parser));
   my_parser->buffer = NULL;
@@ -48,11 +56,27 @@ struct xml_item* create_xml_attribute() {
   return my_struct;
 }
 
-int FAIL(char *message, ...) {\
-  va_list argument_pointer; va_start(argument_pointer, message);
-  printf(message, argument_pointer);
-  /* FIXME, set some flag or anything */
-  return 0;
+struct xml_stack* create_xml_stack() {
+  struct xml_stack* new = malloc(sizeof(struct xml_stack));
+  new->previous = NULL;
+  new->element = NULL;
+  return new;
+}
+
+struct xml_stack* push_xml_stack(struct xml_stack* stack,
+				   struct xml_item* item) {
+  struct xml_stack* new = create_xml_stack();
+  new->previous = stack;
+  new->element = item;
+  return new;
+}
+
+struct xml_stack* pop_xml_stack(struct xml_stack* stack) {
+  if (!(stack->previous == NULL)) {
+    return stack->previous;
+  } else {
+    return FAIL("Tried to pop empty stack");
+  }
 }
 
 unicode_char _read_unicode_character(CONST unsigned char* buffer,
@@ -301,6 +325,7 @@ void print_unicode(CONST unicode_char* buffer) {
     printf("%c", (char) buffer[index]);
     index++;
   }
+  fflush(NULL); /* FIXME, remove, for gdb print */
 #ifdef DEBUG
   printf("  ");
   index = 0;
@@ -715,11 +740,14 @@ small_buffer_index run_element_name (CONST unicode_char* buffer,
       index++;
       DEBUG_PRINT("Copied a char..%lx %c %lx\n", character,
 		  (char)character, element_name_storage[index]);
-    } else if (!is_whitespace(buffer, position+index) && (position+index) < end) {
+    } else if ((!is_whitespace(buffer, position+index) && (position+index) < end) && character != SLASH) {
       /* Invalid character found */
       DEBUG_PRINT("Invalid character found..\n", 0);
       free(element_name_storage); element_name_storage = NULL;
       return 0;
+    } else if (character == SLASH) {
+      /* Terminating slash, can only be followed by > */
+      index++;
     } else {
       DEBUG_PRINT("Success, reallocating memory..\n", 0);
       element_name_storage[index+1] = UNICODE_NULL;
@@ -818,8 +846,7 @@ int is_valid_stream(CONST source_buffer_index read) {
     return 1;
 }
 
-unicode_char_length parse_element_start_tag(
-					    CONST unicode_char* buffer,
+unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
 					    CONST unicode_char first_char,
 					    unicode_char_length offset,
 					    unicode_char_length end,
@@ -838,6 +865,7 @@ unicode_char_length parse_element_start_tag(
   element->element.name = element_name;
   DEBUG_PRINT("In parse_element_start_tag..\n", 0);
   print_unicode(element->element.name);
+
   element->type = 3;
   DEBUG_PRINT("Set type to 3, %i\n", element->type);
   return result;
@@ -853,6 +881,9 @@ unicode_char_length parse_element_start_tag(
 void print_tree(struct xml_item* start, int level, int count) {
   char indentation[level+1]; memset(indentation,ASCII_TAB,level);
   indentation[level] = ASCII_NULL;
+  if (start->type < 3 && (start->parent != NULL)) {
+    FAIL("Type of xml_item < 3: %i", start->type);
+  }
   if (start->previous == NULL && 0) {
     printf("%s<", indentation);
   } else {
@@ -929,6 +960,8 @@ struct xml_item* parse_file(FILE *file) {
   struct xml_item *current = root;
   struct xml_item *previous = NULL;
   struct xml_item *closed_tag = NULL;
+  struct xml_stack *element_stack = create_xml_stack();
+  small_int empty_element = 0;
   for (; index < characters; index++) {
     character = read_unicode_character(buffer, index);
     /*
@@ -959,11 +992,20 @@ struct xml_item* parse_file(FILE *file) {
 	DEBUG_PRINT("Element name: ", 0);
 	print_unicode(element_name);
 	DEBUG_PRINT("\n", 0);
-	struct xml_item *tag = current;
+	struct xml_item *tag = NULL;
+	tag = element_stack->element;
 	if (tag->type == 3 &&
 	    !compare_unicode_strings(tag->element.name, element_name)) {
 	  closed_tag = tag;
+	  if (closed_tag->previous) {
+	    current = closed_tag->previous;
+	  } else if (closed_tag->parent) {
+	    current = closed_tag->parent;
+	  } /* FIXME, at topmost element? */
 	  DEBUG_PRINT("Found end tag\n", 0);
+	  if (element_stack->previous) {
+	    element_stack = pop_xml_stack(element_stack);
+	  }
 	} else {
 	  FAIL("End tag mismatch?, %u", index);
 	}
@@ -978,6 +1020,7 @@ struct xml_item* parse_file(FILE *file) {
 	/* Regular element section */
 	DEBUG_PRINT("Look ahead: %lx\n", (unsigned long) look_ahead);
 	unicode_char_length element_end = find_element_endtag(buffer, index+2);
+	empty_element = buffer[element_end-1] == SLASH;
 	struct xml_item *new = create_xml_element();
 	if (previous == NULL) {
 	  current->element.child = new;
@@ -985,6 +1028,7 @@ struct xml_item* parse_file(FILE *file) {
 	  current = new;
 	  parse_element_start_tag(buffer, look_ahead, index+2,
 				  element_end, current);
+	  /* FIXME, empty (without end tag) XML elements */
 	  previous = current;
 	} else {
 	  if (previous->type == 3) {
@@ -997,8 +1041,7 @@ struct xml_item* parse_file(FILE *file) {
 	      new->parent = previous;
 	      previous->element.child = new;
 	    }
-	  }
-	  else if (previous->type == 4) {
+	  } else if (previous->type == 4) {
 	    FAIL("Not supposed to handle type 4 yet", 0);
 	    new->parent = previous->parent;
 	    new->previous = previous;
@@ -1010,6 +1053,9 @@ struct xml_item* parse_file(FILE *file) {
 	  parse_element_start_tag(buffer, look_ahead, index+2,
 				  element_end, current);
 	  previous = current;
+	}
+	if (!empty_element) {
+	  element_stack = push_xml_stack(element_stack, current);
 	}
 	index = element_end;
 	DEBUG_PRINT("\nYay, regular, %lx", index);

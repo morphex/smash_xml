@@ -41,8 +41,11 @@ small_int is_equal_character(CONST unicode_char *buffer,CONST source_buffer_inde
 unicode_char safe_read_unicode_character(CONST unicode_char *buffer,CONST long offset);
 unicode_char read_unicode_character(CONST unicode_char *buffer,CONST long offset);
 unicode_char _read_unicode_character(CONST unsigned char *buffer,CONST long offset);
-int FAIL(char *message,...);
+struct xml_stack *pop_xml_stack(struct xml_stack *stack);
+struct xml_stack *push_xml_stack(struct xml_stack *stack,struct xml_item *item);
+struct xml_stack *create_xml_stack();
 struct xml_item *create_xml_attribute();
 struct xml_item *create_xml_text();
 struct xml_item *create_xml_element();
 struct parser *create_xml_parser();
+int FAIL(char *message,...);
