@@ -283,12 +283,15 @@ small_int compare_unicode_character_array(CONST unicode_char* buffer,
   return compare_unicode_character_array_char(character, compare_to);
 }
 
+int is_whitespace_character(unicode_char character) {
+  return character == 0x0020 || character == 0x0009 || character == 0x000D ||
+    character == 0x000A;
+}
+
 /* Function that returns true if character at offset is whitespace */
 int is_whitespace(CONST unicode_char* buffer,
 			     CONST source_buffer_index offset) {
-  unicode_char character = read_unicode_character(buffer, offset);
-  return character == 0x0020 || character == 0x0009 || character == 0x000D ||
-    character == 0x000A;
+  return is_whitespace_character(read_unicode_character(buffer, offset));
 }
 
 /*
@@ -649,11 +652,11 @@ small_int compare_unicode_array_char_array(unicode_char *unicode,
   Function that parses an attribute name and returns a
   status value or the size.
 
-  FIXME, return values
+  Returns 0 on error.
 */
-small_buffer_index run_attribute_name\
-   (CONST unicode_char* buffer, CONST source_buffer_index position,
-    unicode_char **attribute) {
+small_buffer_index run_attribute_name(CONST unicode_char* buffer,
+				      CONST source_buffer_index position,
+				      unicode_char **attribute) {
   if (!is_name_start_character(buffer, position)) {
     return 0;
   }
@@ -674,7 +677,7 @@ small_buffer_index run_attribute_name\
     if (index > MAXIMUM_NAME_SIZE) {
       /* Attribute name is too long */
       free(attribute_storage); attribute_storage = NULL;
-      return -2;
+      return 0;
     }
     character = read_unicode_character(buffer, position+index);
     if (is_name_character(buffer, position+index)) {
@@ -688,7 +691,7 @@ small_buffer_index run_attribute_name\
       /* Invalid character found */
       DEBUG_PRINT("Invalid character found..\n", 0);
       free(attribute_storage); attribute_storage = NULL;
-      return -3;
+      return 0;
     } else {
       DEBUG_PRINT("Success, reallocating memory..\n", 0);
       attribute_storage[index+1] = UNICODE_NULL;
@@ -746,7 +749,7 @@ small_buffer_index run_element_name (CONST unicode_char* buffer,
       free(element_name_storage); element_name_storage = NULL;
       return 0;
     } else if (character == SLASH) {
-      /* Terminating slash, can only be followed by > */
+      /* Terminating slash, can only be followed by > FIXME - check */
       index++;
     } else {
       DEBUG_PRINT("Success, reallocating memory..\n", 0);
@@ -850,7 +853,7 @@ unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
 					    CONST unicode_char first_char,
 					    unicode_char_length offset,
 					    unicode_char_length end,
-					    void* current) {
+					    struct xml_item* current) {
   /*
     first_char is unused, FIXME
   */
@@ -858,6 +861,7 @@ unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
   small_buffer_index result = 0;
   struct xml_item *element = current;
   result = run_element_name(buffer, offset-1, end, &element_name);
+  offset = offset+result;
   if (result == 0) {
     return FAIL("run_element_name result 0\n", 0);
   }
@@ -865,7 +869,40 @@ unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
   element->element.name = element_name;
   DEBUG_PRINT("In parse_element_start_tag..\n", 0);
   print_unicode(element->element.name);
-
+  unicode_char character = UNICODE_NULL;
+  struct xml_item *previous = NULL;
+  unicode_char_length position = 0;
+  while (offset < end) {
+    if (is_whitespace(buffer, offset)) {
+      offset++;
+      continue;
+    } else {
+      if (is_name_character(buffer, offset)) {
+	struct xml_item *new = create_xml_attribute();
+	if (previous == NULL) {
+	  current->element.attributes = new;
+	  previous = current->element.attributes;
+	} else {
+	  previous->next = new;
+	  previous = new;
+	}
+	offset += run_attribute_name(buffer, offset,
+				      &new->attribute.name);
+	character = read_unicode_character(buffer+1, offset);
+	if (character == DOUBLE_QUOTE || character == SINGLE_QUOTE) {
+	  /* FIXME, get string and add to attribute */
+	  offset += run_attribute_value(buffer, offset+3, character);
+	} else {
+	  return FAIL("Expected single or double quote, got %lx", character);
+	}
+      } else {
+	if (character == SLASH && (offset+1 == end)) {
+	  /* At the end of the empty element */
+	  offset++;
+	}
+      }
+    }
+  }
   element->type = 3;
   DEBUG_PRINT("Set type to 3, %i\n", element->type);
   return result;
@@ -881,20 +918,24 @@ unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
 void print_tree(struct xml_item* start, int level, int count) {
   char indentation[level+1]; memset(indentation,ASCII_TAB,level);
   indentation[level] = ASCII_NULL;
+#ifdef DEBUG
   if (start->type < 3 && (start->parent != NULL)) {
     FAIL("Type of xml_item < 3: %i", start->type);
   }
+#endif
   if (start->previous == NULL && 0) {
     printf("%s<", indentation);
   } else {
     printf("<");    
   }
+#ifdef DEBUG
   if (start == start->next) {
     FAIL("Circular pointers start->next, %i", __LINE__);
   }
   if (start == start->element.child) {
     FAIL("Circular pointers start->child, %i", __LINE__);
   }
+#endif
   
   if (start->element.name != NULL) {
     print_unicode(start->element.name);
@@ -911,7 +952,8 @@ void print_tree(struct xml_item* start, int level, int count) {
     printf("</");
     print_unicode(start->element.name);
     printf("\n%s>", indentation);
-    DEBUG_PRINT("print_tree, %i, %lx, %i\n", level, (unsigned long) &start, count);
+    DEBUG_PRINT("print_tree, %i, %lx, %i\n", level, (unsigned long) &start,
+		count);
     print_tree(start->next, level, count+1);
   } else if (start->element.child != NULL) {
     DEBUG_PRINT("start->child != NULL", 0);

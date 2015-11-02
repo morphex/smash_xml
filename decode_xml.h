@@ -1,12 +1,12 @@
 /* This file was automatically generated.  Do not edit! */
 struct xml_item *parse_file(FILE *file);
 void print_tree(struct xml_item *start,int level,int count);
-unicode_char_length parse_element_start_tag(CONST unicode_char *buffer,CONST unicode_char first_char,unicode_char_length offset,unicode_char_length end,void *current);
+unicode_char_length parse_element_start_tag(CONST unicode_char *buffer,CONST unicode_char first_char,unicode_char_length offset,unicode_char_length end,struct xml_item *current);
 int is_valid_stream(CONST source_buffer_index read);
 source_buffer_index read_into_buffer(unicode_char *buffer,CONST source_buffer_index size,source_buffer_index amount,FILE *file,small_int *valid_unicode);
 small_int is_valid_bom(CONST unicode_char *buffer);
 small_buffer_index run_element_name(CONST unicode_char *buffer,CONST source_buffer_index position,unicode_char_length end,unicode_char **element_name);
-small_buffer_index run_attribute_name\(CONST unicode_char *buffer,CONST source_buffer_index position,unicode_char **attribute);
+small_buffer_index run_attribute_name(CONST unicode_char *buffer,CONST source_buffer_index position,unicode_char **attribute);
 small_int compare_unicode_array_char_array(unicode_char *unicode,char *characters);
 unicode_char convert_char_to_unicode_char(char character);
 small_int is_name_character(CONST unicode_char *buffer,CONST source_buffer_index offset);
@@ -23,6 +23,7 @@ unicode_char_length slice_string(CONST unicode_char *buffer,unicode_char_length 
 void print_unicode(CONST unicode_char *buffer);
 source_buffer_index run_whitespace(CONST unicode_char *buffer,CONST source_buffer_index offset);
 int is_whitespace(CONST unicode_char *buffer,CONST source_buffer_index offset);
+int is_whitespace_character(unicode_char character);
 small_int compare_unicode_character_array(CONST unicode_char *buffer,CONST source_buffer_index offset,CONST unicode_char *compare_to);
 small_int compare_unicode_character_array_char(CONST unicode_char character,CONST unicode_char *compare_to);
 int compare_unicode_character(CONST unicode_char *buffer,CONST source_buffer_index offset,CONST unicode_char compare_to);
