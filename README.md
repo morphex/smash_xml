@@ -18,3 +18,5 @@ Add (contrived) tests to check that it isn't possible to overrun any
 buffers.
 
 WithEndingSlash from test.xml doesn't appear in print_tree output.
+
+Interface that accepts data input in addition to a stream.
