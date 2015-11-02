@@ -16,3 +16,5 @@ the test-suite before using it in development or production.
 
 Add (contrived) tests to check that it isn't possible to overrun any
 buffers.
+
+WithEndingSlash from test.xml doesn't appear in print_tree output.
