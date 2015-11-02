@@ -5,15 +5,6 @@
 #include <string.h>
 #include <constants.h>
 
-/*
-  Whether internal functions are static, all are public when building tests.
- */
-#ifndef BUILD_LIB
-#define static static
-#else
-#define STATIC
-#endif
-
 int FAIL(char *message, ...) {\
   va_list argument_pointer; va_start(argument_pointer, message);
   printf(message, argument_pointer);
