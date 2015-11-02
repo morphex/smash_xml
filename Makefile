@@ -2,17 +2,17 @@ all:
 	gcc makeheaders.c -o makeheaders
 	./makeheaders decode_xml.c
 #	gcc -Wall decode_xml.c tests.c -g -o decode_xml -I.
-	gcc -std=c90 -Wall decode_xml.c tests.c -g -o decode_xml -I.
+	gcc -std=c90 -Wall -Os decode_xml.c -g -o decode_xml -I.
 #	gcc -std=c90 -Wall  message.c -g -o message -I.
 debug:
 	gcc makeheaders.c -o makeheaders
 	./makeheaders decode_xml.c
-	gcc -DDEBUG  -Wall -Wno-format-extra-args -ggdb3 -std=c90 decode_xml.c tests.c -o decode_xml -I.
+	gcc -DDEBUG  -Wall -Wno-format-extra-args -ggdb3 -std=c90 decode_xml.c -o decode_xml_debug -I. -DTEST
 #	gcc -DDEBUG -Wall -ggdb3 -std=c90 message.c -o message -I.
 efence-build:
 	gcc makeheaders.c -o makeheaders
 	./makeheaders decode_xml.c
-	gcc -lefence -DDEBUG -Wall -ggdb3 -std=c90 decode_xml.c tests.c -o decode_xml -I.
+	gcc -lefence -DDEBUG -Wall -ggdb3 -std=c90 decode_xml.c tests.c -o decode_xml -I. -DTEST
 #	gcc -lefence -DDEBUG -Wall -ggdb3 -std=c90 message.c -o message -I.
 clean:
 	rm -f *.exe
@@ -26,7 +26,7 @@ assembler:
 	gcc -fno-asynchronous-unwind-tables -S call_overhead.c
 	gcc -fno-asynchronous-unwind-tables -S call_overhead_reference.c
 test: clean debug
-	./decode_xml
+	./decode_xml_debug
 valgrind: test
 	valgrind --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=100 --track-fds=yes ./decode_xml > valgrind_out.log 2>&1
 	@echo

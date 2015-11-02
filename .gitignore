@@ -16,3 +16,4 @@ message
 build.log
 pointers.s
 *.xml#
+*.o

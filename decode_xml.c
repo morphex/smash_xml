@@ -5,6 +5,15 @@
 #include <string.h>
 #include <constants.h>
 
+/*
+  Whether internal functions are static, all are public when building tests.
+ */
+#ifndef BUILD_LIB
+#define static static
+#else
+#define STATIC
+#endif
+
 int FAIL(char *message, ...) {\
   va_list argument_pointer; va_start(argument_pointer, message);
   printf(message, argument_pointer);
@@ -79,8 +88,8 @@ struct xml_stack* pop_xml_stack(struct xml_stack* stack) {
   }
 }
 
-unicode_char _read_unicode_character(CONST unsigned char* buffer,
-					       CONST long offset) {
+static unicode_char _read_unicode_character(CONST unsigned char* buffer,
+					    CONST long offset) {
   unicode_char result = (buffer[(offset)+2] << 16) +
     (buffer[(offset)+1] << 8) +
     buffer[(offset)+0];
@@ -88,15 +97,15 @@ unicode_char _read_unicode_character(CONST unsigned char* buffer,
   return result;
 }
 
-unicode_char read_unicode_character(CONST unicode_char* buffer,
-					       CONST long offset) {
+static unicode_char read_unicode_character(CONST unicode_char* buffer,
+					   CONST long offset) {
   return buffer[offset];
 }
 
 /* "Safe" stream reader that checks to see that the stream hasn't ended. */
 
-unicode_char safe_read_unicode_character(CONST unicode_char* buffer,
-						    CONST long offset) {
+static unicode_char safe_read_unicode_character(CONST unicode_char* buffer,
+						CONST long offset) {
   unicode_char character = read_unicode_character(buffer, offset);
   if (character == UNICODE_NULL) {
     /* FIXME, handle error, stream ended before it was expected */
@@ -104,25 +113,25 @@ unicode_char safe_read_unicode_character(CONST unicode_char* buffer,
   return character;
 }
 
-small_int is_equal_character(CONST unicode_char* buffer,
-					   CONST source_buffer_index offset) {
+static small_int is_equal_character(CONST unicode_char* buffer,
+				    CONST source_buffer_index offset) {
   return read_unicode_character(buffer, offset) == 0x003D;
 }
 
-small_int is_exclamation_mark_char(CONST unicode_char character) {
+static small_int is_exclamation_mark_char(CONST unicode_char character) {
   return character == EXCLAMATION_MARK;
 }
 
-small_int is_question_mark_char(CONST unicode_char character) {
+static small_int is_question_mark_char(CONST unicode_char character) {
   return character == QUESTION_MARK;
 }
 
-small_int is_slash(CONST unicode_char character) {
+static small_int is_slash(CONST unicode_char character) {
   return character == SLASH;
 }
 
-small_int is_cdata_start(CONST unicode_char* buffer,
-					 unicode_char_length offset) {
+static small_int is_cdata_start(CONST unicode_char* buffer,
+				unicode_char_length offset) {
   return read_unicode_character(buffer, offset) == 0x43 &&
     read_unicode_character(buffer, offset+1) == 0x44 &&
     read_unicode_character(buffer, offset+2) == 0x41 &&
@@ -131,8 +140,8 @@ small_int is_cdata_start(CONST unicode_char* buffer,
     read_unicode_character(buffer, offset+5) == 0x5b;
 }
 
-unicode_char_length find_cdata_end(CONST unicode_char* buffer,
-				   unicode_char_length offset) {
+static unicode_char_length find_cdata_end(CONST unicode_char* buffer,
+					  unicode_char_length offset) {
   unicode_char character = UNICODE_NULL;
   do {
     character = read_unicode_character(buffer, offset);
@@ -149,8 +158,8 @@ unicode_char_length find_cdata_end(CONST unicode_char* buffer,
   return FAIL("Reached end of find_cdata_end, %lx", offset);
 }
 
-unicode_char_length find_comment_end(CONST unicode_char* buffer,
-						unicode_char_length offset) {
+static unicode_char_length find_comment_end(CONST unicode_char* buffer,
+					    unicode_char_length offset) {
   unicode_char character = UNICODE_NULL;
   do {
     character = read_unicode_character(buffer, offset);
@@ -166,8 +175,8 @@ unicode_char_length find_comment_end(CONST unicode_char* buffer,
   return FAIL("Reached end of find_comment_end, %lx", offset);
 }
 
-unicode_char_length find_element_endtag				\
-    (CONST unicode_char* buffer, unicode_char_length offset) {
+static unicode_char_length find_element_endtag(CONST unicode_char* buffer,
+					       unicode_char_length offset) {
   unicode_char character = UNICODE_NULL;
   do {
     character = read_unicode_character(buffer, offset);
@@ -179,8 +188,8 @@ unicode_char_length find_element_endtag				\
   return FAIL("Reached end of find_element_endtag, %lx", offset);
 }
 
-unicode_char_length find_processing_instruction_end		\
-    (CONST unicode_char* buffer, unicode_char_length offset) {
+static unicode_char_length find_processing_instruction_end\
+ (CONST unicode_char* buffer, unicode_char_length offset) {
   unicode_char character = UNICODE_NULL;
   do {
     character = read_unicode_character(buffer, offset);
@@ -194,7 +203,7 @@ unicode_char_length find_processing_instruction_end		\
   return FAIL("Could not find end of processing instruction, %lx", offset);
 }
 
-small_int is_comment_start(CONST unicode_char* buffer,
+static small_int is_comment_start(CONST unicode_char* buffer,
 					   unicode_char_length offset) {
   DEBUG_PRINT("ics: %lx\n", read_unicode_character(buffer, offset));
   DEBUG_PRINT("ics: %lx\n", read_unicode_character(buffer, offset+1));
@@ -207,8 +216,8 @@ small_int is_comment_start(CONST unicode_char* buffer,
 
   Returns uint 0x22 for " and 0x27 for '
 */
-unicode_char is_attribute_value_start(CONST unicode_char* buffer,
-					 CONST source_buffer_index offset) {
+static unicode_char is_attribute_value_start(CONST unicode_char* buffer,
+					     CONST source_buffer_index offset){
   unicode_char character = read_unicode_character(buffer, offset);
   if (character == 0x22 || character == 0x27) {
     return character;
@@ -231,16 +240,16 @@ small_int compare_unicode_character_char(CONST unicode_char first,
 
 /* Returns 0 if strings are equal */
 int compare_unicode_character(CONST unicode_char* buffer,
-					 CONST source_buffer_index offset,
-					 CONST unicode_char compare_to) {
+			      CONST source_buffer_index offset,
+			      CONST unicode_char compare_to) {
   unicode_char character = read_unicode_character(buffer, offset);
   DEBUG_PRINT("compare_unicode_character: %lx - %lx\n", character, compare_to);
   return compare_unicode_character_char(character, compare_to);
 
 }
 
-small_int compare_unicode_character_array_char(CONST unicode_char character,
-					       CONST unicode_char* compare_to){
+small_int compare_unicode_character_array_char\
+ (CONST unicode_char character, CONST unicode_char* compare_to){
 
   int index = 0;
   unicode_char current_comparison = NULL;
@@ -289,8 +298,8 @@ int is_whitespace_character(unicode_char character) {
 }
 
 /* Function that returns true if character at offset is whitespace */
-int is_whitespace(CONST unicode_char* buffer,
-			     CONST source_buffer_index offset) {
+static int is_whitespace(CONST unicode_char* buffer,
+			 CONST source_buffer_index offset) {
   return is_whitespace_character(read_unicode_character(buffer, offset));
 }
 
@@ -299,8 +308,8 @@ int is_whitespace(CONST unicode_char* buffer,
   characters.  When a non-whitespace character is found,
   returns the position.
 */
-source_buffer_index run_whitespace(CONST unicode_char* buffer,
-				      CONST source_buffer_index offset) {
+static source_buffer_index run_whitespace(CONST unicode_char* buffer,
+					  CONST source_buffer_index offset) {
   source_buffer_index index = 0;
   unicode_char character = 0;
   do {
@@ -350,9 +359,9 @@ void print_unicode(CONST unicode_char* buffer) {
 */
 
 unicode_char_length slice_string(CONST unicode_char* buffer,
-					    unicode_char_length start,
-					    CONST unicode_char_length stop,
-					    unicode_char **slice) {
+				 unicode_char_length start,
+				 CONST unicode_char_length stop,
+				 unicode_char **slice) {
   unicode_char_length size = stop - start;
   unicode_char_length allocate_bytes = (size + 2) * UNICODE_STORAGE_BYTES;
   unicode_char *local_slice = malloc(allocate_bytes); memset(local_slice, 0, allocate_bytes);
@@ -415,9 +424,9 @@ small_int compare_unicode_string(CONST unicode_char* buffer,
 
   FIXME, figure out what to do if attribute is empty.
 */
-source_buffer_index run_attribute_value(CONST unicode_char* buffer,
-					CONST source_buffer_index offset,
-					CONST unicode_char end_quote) {
+static source_buffer_index run_attribute_value(CONST unicode_char* buffer,
+					      CONST source_buffer_index offset,
+					       CONST unicode_char end_quote) {
   int index = 0;
   unicode_char character = UNICODE_NULL;
   DEBUG_PRINT("In run_attribute_value\n", 0);
@@ -475,7 +484,8 @@ source_buffer_index get_length_unicode(CONST unicode_char* string) {
 	return index;
       }
   }
-  return FAIL("Reached end of get_length_unicode without a return value %ul", index);
+  return FAIL("Reached end of get_length_unicode without a return value %ul",
+	      index);
 }
 
 small_int compare_unicode_strings(unicode_char* first,
@@ -488,6 +498,8 @@ small_int compare_unicode_strings(unicode_char* first,
   return value of > 0 indicates success
 
   Assumes at least 1 Unicode character in buffer.
+
+  FIXME, return value
 */
 source_buffer_index run_unicode_string \
               (CONST unicode_char* buffer, CONST source_buffer_index offset,
@@ -556,7 +568,7 @@ small_int validate_unicode_xml_1(CONST unicode_char* buffer,
 
 */
 
-small_int is_name_start_character_char(CONST unicode_char character) {
+static small_int is_name_start_character_char(CONST unicode_char character) {
   if (compare_unicode_character_array_char(character,
 		      name_start_character_single_characters) >= 0) {
     DEBUG_PRINT("name_start_character 1\n", 0);
@@ -581,8 +593,8 @@ small_int is_name_start_character_char(CONST unicode_char character) {
   return 0;
 }
 
-small_int is_name_start_character(CONST unicode_char* buffer,
-				  CONST source_buffer_index offset) {
+static small_int is_name_start_character(CONST unicode_char* buffer,
+					 CONST source_buffer_index offset) {
   unicode_char character = read_unicode_character(buffer, offset);
   return is_name_start_character_char(character);
 }
@@ -594,7 +606,7 @@ small_int is_name_start_character(CONST unicode_char* buffer,
 
 */
 
-small_int is_name_character(CONST unicode_char* buffer,
+static small_int is_name_character(CONST unicode_char* buffer,
 			    CONST source_buffer_index offset) {
   if (is_name_start_character(buffer, offset)) {
     DEBUG_PRINT("name start 1\n", 0);
@@ -615,7 +627,7 @@ small_int is_name_character(CONST unicode_char* buffer,
   return 0;
 }
 
-unicode_char convert_char_to_unicode_char(char character) {
+static unicode_char convert_char_to_unicode_char(char character) {
   return (unicode_char) character;
 }
 
@@ -654,9 +666,9 @@ small_int compare_unicode_array_char_array(unicode_char *unicode,
 
   Returns 0 on error.
 */
-small_buffer_index run_attribute_name(CONST unicode_char* buffer,
-				      CONST source_buffer_index position,
-				      unicode_char **attribute) {
+static small_buffer_index run_attribute_name(CONST unicode_char* buffer,
+					    CONST source_buffer_index position,
+					     unicode_char **attribute) {
   if (!is_name_start_character(buffer, position)) {
     return 0;
   }
@@ -714,10 +726,10 @@ small_buffer_index run_attribute_name(CONST unicode_char* buffer,
 
   FIXME, end and overruns
 */
-small_buffer_index run_element_name (CONST unicode_char* buffer,
-				     CONST source_buffer_index position,
-				     unicode_char_length end,
-				     unicode_char **element_name) {
+static small_buffer_index run_element_name (CONST unicode_char* buffer,
+					    CONST source_buffer_index position,
+					    unicode_char_length end,
+					    unicode_char **element_name) {
   if (!is_name_start_character(buffer, position)) {
     return 0;
   }
@@ -843,13 +855,12 @@ int is_valid_stream(CONST source_buffer_index read) {
 	buffer, each 32 bit unicode symbol consists of
       4 bytes, 32 bits.
       */
-      printf("Corrupted Unicode stream, %lx bytes", read);
-      return 0;
+      return FAIL("Corrupted Unicode stream, %lx bytes", read);
     }
     return 1;
 }
 
-unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
+static unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
 					    CONST unicode_char first_char,
 					    unicode_char_length offset,
 					    unicode_char_length end,
@@ -871,7 +882,6 @@ unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
   print_unicode(element->element.name);
   unicode_char character = UNICODE_NULL;
   struct xml_item *previous = NULL;
-  unicode_char_length position = 0;
   while (offset < end) {
     if (is_whitespace(buffer, offset)) {
       offset++;
@@ -888,9 +898,9 @@ unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
 	}
 	offset += run_attribute_name(buffer, offset,
 				      &new->attribute.name);
-	character = read_unicode_character(buffer+1, offset);
-	if (character == DOUBLE_QUOTE || character == SINGLE_QUOTE) {
+	if (is_attribute_value_start(buffer, offset+1)) {
 	  /* FIXME, get string and add to attribute */
+	  character = read_unicode_character(buffer, offset+1);
 	  offset += run_attribute_value(buffer, offset+3, character);
 	} else {
 	  return FAIL("Expected single or double quote, got %lx", character);
@@ -1130,3 +1140,11 @@ struct xml_item* parse_file(FILE *file) {
   free(buffer); buffer = NULL;
   return root;
 }
+
+#ifdef TEST
+#include <tests.c>
+#else
+int main() {
+  return 0;
+}
+#endif

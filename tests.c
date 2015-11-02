@@ -1,7 +1,9 @@
+/*
 #include <stdio.h>
 #include <stdlib.h>
 #include <globals.h>
 #include <decode_xml.h>
+*/
 
 void HANDLE_ERROR(char *message, ...) {
   va_list argument_pointer; va_start(argument_pointer, message);
