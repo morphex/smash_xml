@@ -11,11 +11,11 @@ void HANDLE_ERROR(char *message, ...) {
 }
 
 int main() {
-  unsigned int test_basics, test_whitespace, test_attribute,
+  unsigned int test_basics, test_attribute,
     test_miscellaneous, test_compare, test_search, test_slice_and_length, rat,
     test_parse_file;
   rat = 1; /* Run All Tests */
-  test_basics = rat; test_whitespace = rat; test_attribute = rat;
+  test_basics = rat; test_attribute = rat;
   test_miscellaneous = rat; test_compare = rat; test_search = rat;
   test_slice_and_length = rat;
   test_parse_file = rat;
@@ -49,21 +49,6 @@ int main() {
     }
     if (read_unicode_character(buffer, offset+120) != 0x10FFFF) {
       HANDLE_ERROR("Expected (0x10FFFF) at position 120", 0);
-    }
-  }
-  if (test_whitespace) {
-#ifdef DEBUG
-    printf("test_whitespace\n");
-#endif
-    unicode_char result = run_whitespace(buffer, offset+5);
-    unsigned long result2 = read_unicode_character(buffer, result);
-    if ((char) result2 != 'v') {
-      HANDLE_ERROR("Expected character v at position 7", 0);
-    }
-    result = run_whitespace(buffer, offset+290);
-    result2 = read_unicode_character(buffer, result);
-    if ((char) result2 != '<') {
-      HANDLE_ERROR("Expected character < at position %i", result);
     }
   }
   /* Tests of run_attribute_value */
@@ -103,21 +88,6 @@ int main() {
   }
   /* Tests of run_attribute_name - FIXME */
 
-  /* Whitespace tests */
-  if (test_whitespace) {
-#ifdef DEBUG
-    printf("test_whitespace\n");
-#endif
-    source_buffer_index index = 0;
-    index = run_whitespace(buffer, offset+290);
-    if (index != 299) {
-      HANDLE_ERROR("Expected position 299, got %i", index);
-    }
-
-    if (!is_whitespace(buffer, offset+19)) {
-      HANDLE_ERROR("Expected whitespace at position 19", 0);
-    }
-  }
   /* Equal sign test */
   if (test_miscellaneous) {
 #ifdef DEBUG

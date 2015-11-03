@@ -5,7 +5,7 @@
 #include <string.h>
 #include <constants.h>
 
-int FAIL(char *message, ...) {\
+static int FAIL(char *message, ...) {\
   va_list argument_pointer; va_start(argument_pointer, message);
   printf(message, argument_pointer);
   /* FIXME, set some flag or anything */
@@ -56,14 +56,14 @@ struct xml_item* create_xml_attribute() {
   return my_struct;
 }
 
-struct xml_stack* create_xml_stack() {
+static struct xml_stack* create_xml_stack() {
   struct xml_stack* new = malloc(sizeof(struct xml_stack));
   new->previous = NULL;
   new->element = NULL;
   return new;
 }
 
-struct xml_stack* push_xml_stack(struct xml_stack* stack,
+static struct xml_stack* push_xml_stack(struct xml_stack* stack,
 				   struct xml_item* item) {
   struct xml_stack* new = create_xml_stack();
   new->previous = stack;
@@ -71,7 +71,7 @@ struct xml_stack* push_xml_stack(struct xml_stack* stack,
   return new;
 }
 
-struct xml_stack* pop_xml_stack(struct xml_stack* stack) {
+static struct xml_stack* pop_xml_stack(struct xml_stack* stack) {
   if (!(stack->previous == NULL)) {
     return stack->previous;
   } else {
@@ -292,30 +292,6 @@ int is_whitespace_character(unicode_char character) {
 static int is_whitespace(CONST unicode_char* buffer,
 			 CONST source_buffer_index offset) {
   return is_whitespace_character(read_unicode_character(buffer, offset));
-}
-
-/*
-  Function that runs through buffer looking for whitespace
-  characters.  When a non-whitespace character is found,
-  returns the position.
-*/
-static source_buffer_index run_whitespace(CONST unicode_char* buffer,
-					  CONST source_buffer_index offset) {
-  source_buffer_index index = 0;
-  unicode_char character = 0;
-  do {
-    character = read_unicode_character(buffer, offset+index);
-    DEBUG_PRINT("run_whitespace character: %lx\n", character);
-    if (character == UNICODE_NULL) {
-      return offset + (index-1);
-    }
-    if (is_whitespace(buffer, offset+index)) {
-      index++;
-      continue;
-    } else {
-      return offset + index;
-    }
-  } while (1);
 }
 
 /*
@@ -560,8 +536,7 @@ small_int validate_unicode_xml_1(CONST unicode_char* buffer,
 */
 
 static small_int is_name_start_character_char(CONST unicode_char character) {
-  if (compare_unicode_character_array_char(character,
-		      name_start_character_single_characters) >= 0) {
+  if (character == 0x003A || character == 0x005F) {
     DEBUG_PRINT("name_start_character 1\n", 0);
     return 1;
   }
@@ -603,12 +578,11 @@ static small_int is_name_character(CONST unicode_char* buffer,
     DEBUG_PRINT("name start 1\n", 0);
     return 1;
   }
-  if (compare_unicode_character_array(buffer, offset,
-				      name_character_single_characters) >= 0) {
+  unicode_char character = read_unicode_character(buffer, offset);
+  if(character == 0x002D || character == 0x002E || character == 0x00B7) {
     DEBUG_PRINT("name start 2\n", 0);
     return 1;
   }
-  unicode_char character = read_unicode_character(buffer, offset);
   if ((character >= 0x0030 && character <= 0x0039) || /* [0-9] */
       (character >= 0x0300 && character <= 0x036F) || /* [#x300-#x36F] */
       (character >= 0x203F && character <= 0x2040)) { /* [#x203F-#x2040] */

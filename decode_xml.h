@@ -21,11 +21,7 @@ small_int compare_unicode_character_array(CONST unicode_char *buffer,CONST sourc
 small_int compare_unicode_character_array_char\(CONST unicode_char character,CONST unicode_char *compare_to);
 int compare_unicode_character(CONST unicode_char *buffer,CONST source_buffer_index offset,CONST unicode_char compare_to);
 small_int compare_unicode_character_char(CONST unicode_char first,CONST unicode_char second);
-struct xml_stack *pop_xml_stack(struct xml_stack *stack);
-struct xml_stack *push_xml_stack(struct xml_stack *stack,struct xml_item *item);
-struct xml_stack *create_xml_stack();
 struct xml_item *create_xml_attribute();
 struct xml_item *create_xml_text();
 struct xml_item *create_xml_element();
 struct parser *create_xml_parser();
-int FAIL(char *message,...);
