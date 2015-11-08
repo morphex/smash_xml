@@ -17,3 +17,5 @@ build.log
 pointers.s
 *.xml#
 *.o
+*.stackdump
+#test.xml#save#

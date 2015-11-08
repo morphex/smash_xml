@@ -5,17 +5,15 @@ all:
 alltest:
 	gcc makeheaders.c -o makeheaders
 	./makeheaders decode_xml.c
-	gcc -std=c90 -Wall -Os decode_xml.c -g -o decode_xml -I. -DTEST
+	gcc -std=c90 -Wall decode_xml.c -g -o decode_xml -I. -DTEST
 debug:
 	gcc makeheaders.c -o makeheaders
 	./makeheaders decode_xml.c
-	gcc -DDEBUG  -Wall -Wno-format-extra-args -ggdb3 -std=c90 decode_xml.c -o decode_xml_debug -I. -DTEST
-#	gcc -DDEBUG -Wall -ggdb3 -std=c90 message.c -o message -I.
+	gcc -DDEBUG  -Wall -Wno-format-extra-args -g -std=c90 decode_xml.c -o decode_xml_debug -I. -DTEST
 efence-build:
 	gcc makeheaders.c -o makeheaders
 	./makeheaders decode_xml.c
 	gcc -lefence -DDEBUG -Wall -ggdb3 -std=c90 decode_xml.c tests.c -o decode_xml -I. -DTEST
-#	gcc -lefence -DDEBUG -Wall -ggdb3 -std=c90 message.c -o message -I.
 clean:
 	rm -f *.exe
 	rm -f *.exe.stackdump
