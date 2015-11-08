@@ -10,7 +10,7 @@ static int FAIL(char *message, ...) {\
   printf(message, argument_pointer);
   /* FIXME, set some flag or anything */
   exit(1);
-  return NULL;
+  return 0;
 }
 
 struct parser* create_xml_parser() {
@@ -75,7 +75,7 @@ static struct xml_stack* pop_xml_stack(struct xml_stack* stack) {
   if (!(stack->previous == NULL)) {
     return stack->previous;
   } else {
-    return FAIL("Tried to pop empty stack");
+    FAIL("Tried to pop empty stack"); return NULL;
   }
 }
 
@@ -844,7 +844,9 @@ static unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
   DEBUG_PRINT(element_name, 0);
   element->element.name = element_name;
   DEBUG_PRINT("In parse_element_start_tag..\n", 0);
+#ifdef DEBUG
   print_unicode(element->element.name);
+#endif
   unicode_char character = UNICODE_NULL;
   struct xml_item *previous = NULL;
   while (offset < end) {
@@ -965,12 +967,16 @@ struct xml_item* parse_file(FILE *file) {
   small_int valid_unicode = 0;
   unicode_char_length \
     characters = read_into_buffer(buffer, file_size, 0, file, &valid_unicode);
+#ifdef DEBUG
   printf("Characters: %lx\n", characters);
   printf("Allocated: %lx\n", sizeof(unicode_char) * (file_size/4));
+#endif
   if (!valid_unicode) {
     return NULL;
   }
+#ifdef DEBUG
   printf("Read %lx characters\n", characters);
+#endif
   unicode_char_length index = 0;
   unicode_char character = UNICODE_NULL;
   unicode_char look_ahead = UNICODE_NULL;
@@ -988,7 +994,9 @@ struct xml_item* parse_file(FILE *file) {
     */
     if (character == UNICODE_NULL) {
       /* Stream ended before it was expected, FIXME */
+#ifdef DEBUG
       print_unicode(buffer);
+#endif
       fflush(NULL);
       FAIL("Stream ended before it was expected in parse_file, position %lx, line %i", index, __LINE__);
     }
@@ -1007,7 +1015,9 @@ struct xml_item* parse_file(FILE *file) {
 	unicode_char* element_name = NULL;
 	run_element_name(buffer, index+2, end, &element_name);
 	DEBUG_PRINT("Element name: ", 0);
+#ifdef DEBUG
 	print_unicode(element_name);
+#endif
 	DEBUG_PRINT("\n", 0);
 	struct xml_item *tag = NULL;
 	tag = element_stack->element;

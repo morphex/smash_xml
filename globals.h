@@ -150,7 +150,7 @@ struct xml_item {
   union {
     struct xml_element {
       unicode_char *name;
-      struct xml_attribute *attributes;
+      struct xml_item *attributes;
       struct xml_item *child;
     } element;
 

@@ -7,7 +7,8 @@
 
 void HANDLE_ERROR(char *message, ...) {
   va_list argument_pointer; va_start(argument_pointer, message);
-  printf(message, argument_pointer);
+  vprintf(message, argument_pointer);
+  va_end(argument_pointer);
 }
 
 int main() {
@@ -27,11 +28,11 @@ int main() {
   file = fopen("test.xml", "rb+");
   read = read_into_buffer(buffer, READ_BYTES, 0, file, &valid_unicode);
   fclose(file);
-  printf("Read: %lx\n", read);
+  DEBUG_PRINT("Read: %ld\n", read);
   /* print_unicode(buffer); */
   unicode_char_length offset = 0;
   if (read < 200) {
-    HANDLE_ERROR("test.xml less than %lu bytes\n", read*4);
+    HANDLE_ERROR("test.xml less than %ld bytes\n", read*4);
   }
   buffer[read] = UNICODE_NULL;
   if (test_basics) {
@@ -39,7 +40,7 @@ int main() {
     printf("test_basics\n");
 #endif
     if (!valid_unicode) {
-      HANDLE_ERROR("Invalid Unicode stream, read %lu bytes", read);
+      HANDLE_ERROR("Invalid Unicode stream, read %ld bytes", read);
     }
     if (read_unicode_character(buffer, offset) != 0x3c) {
       HANDLE_ERROR("Expected < at position 1", 0);
@@ -95,7 +96,7 @@ int main() {
 #endif
     unicode_char equal_sign = read_unicode_character(buffer, offset+28);
     if (equal_sign != EQUAL_CHARACTER) {
-      HANDLE_ERROR("Expected equal sign at position 28, got %lu", equal_sign);
+      HANDLE_ERROR("Expected equal sign at position 28, got %ld", equal_sign);
     }
   }
   /* Attribute reading tests */
@@ -105,13 +106,13 @@ int main() {
 #endif
     unicode_char attribute_start = read_unicode_character(buffer, offset+361);
     if (attribute_start != SINGLE_QUOTE) {
-      HANDLE_ERROR("Expected single quote at position 361, got %lu",
+      HANDLE_ERROR("Expected single quote at position 361, got %ld",
 		   attribute_start);
     }
     source_buffer_index attribute_stop = 0;
     attribute_stop = run_attribute_value(buffer, offset+362, attribute_start);
     if (attribute_stop != 374) {
-      HANDLE_ERROR("Expected position 374, got position %lu", attribute_stop);
+      HANDLE_ERROR("Expected position 374, got position %ld", attribute_stop);
     }
   }
   /* Compare tests */
@@ -164,12 +165,12 @@ int main() {
     printf("test_search\n");
 #endif
     unicode_char compare_to3[] = {0x2d,0x2d,0x3e,UNICODE_NULL};
-    print_unicode(compare_to3);
+    /* print_unicode(compare_to3); */
     source_buffer_index search_result = run_unicode_string(buffer,
 							   0,
 							   compare_to3);
     if (search_result != 287) {
-      HANDLE_ERROR("Expected to find result at position %lx, got %lx",
+      HANDLE_ERROR("Expected to find result at position %ld, got %ld",
 		   287, search_result);
     }
   }
@@ -179,17 +180,17 @@ int main() {
     printf("test_slice_and_length\n");
 #endif
     source_buffer_index length = get_length_unicode(buffer);
-    if (length != 1948) {
-      HANDLE_ERROR("Expected length of 1948, got %i", length);
+    if (length != 805) {
+      HANDLE_ERROR("Expected length of 805, got %lu\n", length);
     }
     unicode_char *attribute = NULL;
     unicode_char_length end = 0;
     end = run_attribute_value(buffer, offset+362, SINGLE_QUOTE);
     if (end != 374) {
-      HANDLE_ERROR("Expected end at 374, got %ll", end);
+      HANDLE_ERROR("Expected end at 374, got %ld", end);
     }
     slice_string(buffer, (unicode_char_length) offset+362, end-1, &attribute);
-    print_unicode(attribute);
+    /* print_unicode(attribute); */
     length = get_length_unicode(attribute);
     if (length != 12) {
       HANDLE_ERROR("Expected length of 12, got %i", length);
