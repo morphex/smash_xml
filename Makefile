@@ -1,35 +1,35 @@
+CC = gcc
+COMPILER_OPTIONS = -std=iso9899:1990 -pedantic -fms-extensions decode_xml.c -g -o decode_xml -I. -Wall
+
 all:
-	gcc makeheaders.c -o makeheaders
+	$(CC) makeheaders.c -o makeheaders
 	./makeheaders decode_xml.c
-	gcc -std=c90 -Wall -Os decode_xml.c -g -o decode_xml -I.
+	$(CC) $(COMPILER_OPTIONS)
 alltest:
-	gcc makeheaders.c -o makeheaders
+	$(CC) makeheaders.c -o makeheaders
 	./makeheaders decode_xml.c
-	gcc -std=c90 -Wall decode_xml.c -g -o decode_xml -I. -DTEST
+	$(CC) $(COMPILER_OPTIONS) -DTEST
 debug:
-	gcc makeheaders.c -o makeheaders
+	$(CC) makeheaders.c -o makeheaders
 	./makeheaders decode_xml.c
-	gcc -DDEBUG  -Wall -Wno-format-extra-args -g -std=c90 decode_xml.c -o decode_xml_debug -I. -DTEST
-efence-build:
-	gcc makeheaders.c -o makeheaders
-	./makeheaders decode_xml.c
-	gcc -lefence -DDEBUG -Wall -ggdb3 -std=c90 decode_xml.c tests.c -o decode_xml -I. -DTEST
+	$(CC) $(COMPILER_OPTIONS) -DDEBUG -I. -DTEST
+#	$(CC) -DDEBUG -Wall -ggdb3 -ansi message.c -o message -I.
+#efence-build:
+#	$(CC) makeheaders.c -o makeheaders
+#	./makeheaders decode_xml.c
+#	$(CC) -lefence -DDEBUG -Wall -ggdb3 -ansi -fms-extensions decode_xml.c tests.c -o decode_xml -I. -DTEST
+##	$(CC) -lefence -DDEBUG -Wall -ggdb3 -ansi message.c -o message -I.
 clean:
 	rm -f *.exe
 	rm -f *.exe.stackdump
 	rm -f *~
 	rm -f ./decode_xml
-crash:
-	gcc crash_gcc_float.c -o crash_gcc_float
-	gcc crash_gcc_string.c -o crash_gcc_float
-assembler:
-	gcc -fno-asynchronous-unwind-tables -S call_overhead.c
-	gcc -fno-asynchronous-unwind-tables -S call_overhead_reference.c
+	rm -f ./decode_xml_debug
 test: alltest
 	./decode_xml
 valgrind: test
 	valgrind --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=100 --track-fds=yes ./decode_xml > valgrind_out.log 2>&1
 	@echo
 	@echo "Program/Valgrind output in valgrind_out.log"
-efence: efence-build
-	#./decode_xml
+#efence: efence-build
+#	#./decode_xml
