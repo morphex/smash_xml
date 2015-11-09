@@ -1,5 +1,7 @@
 CC = gcc
 COMPILER_OPTIONS = -std=iso9899:1990 -pedantic -fms-extensions decode_xml.c -g -o decode_xml -I. -Wall
+#CC = tcc
+#COMPILER_OPTIONS = -o decode_xml -I. decode_xml.c
 
 all:
 	$(CC) makeheaders.c -o makeheaders

@@ -51,11 +51,11 @@ typedef unsigned long unicode_character_variations;
   small range of integer values.
 */
 
-#if __STDC_VERSION__ < 199901L
+#if (__STDC_VERSION__ < 199901L) || __TINYC__
 typedef int small_int;
 typedef unsigned int small_fast_unsigned_int; 
 #else
-typedef int_fast8_t small_int; 
+typedef int_fast8_t small_int;
 typedef uint_fast8_t small_fast_unsigned_int;
 #endif
 
