@@ -897,7 +897,7 @@ static unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
 	  attribute_value_length = slice_string(buffer, offset+2,
 						attribute_value_length,
 						&new->attribute.content);
-	  printf("Worked with attribute, %ld, %i\n", offset,
+	  DEBUG_PRINT("Worked with attribute, %ld, %i\n", offset,
 		 attribute_value_length);
 	  offset += attribute_value_length;
 	  offset += 3;
@@ -909,7 +909,6 @@ static unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
 	  /* At the end of the empty element */
 	  offset++;
 	} else {
-	  char c; c = getc(stdin);
 	  return FAIL("Unexpected character %ld at position %ld",
 		      character, offset+1);
 	}
