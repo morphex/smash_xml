@@ -82,7 +82,7 @@ int main() {
       HANDLE_ERROR("Expected position 0 (failure), got position %i", result3);
     }
 #else
-    if (result3 != 211) {
+    if (result3 != 210) {
       HANDLE_ERROR("Expected position 210, got position %i", result3);
     }            
 #endif

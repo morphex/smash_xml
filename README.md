@@ -24,3 +24,5 @@ Interface that accepts data input in addition to a stream.
 Refactoring functions so they make use of slice_string
 
 Remove use of -fms-extensions
+
+Add tests for (!)TOLERATE_MINOR_ERRORS

@@ -111,9 +111,7 @@ typedef unsigned long unicode_char_length;
   If set errors like an unescaped ampersand or ELEMENT_STARTTAG
   are tolerated in attribute values.
 */
-/*
 #define TOLERATE_MINOR_ERRORS
-*/
 
 /*
 

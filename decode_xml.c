@@ -7,9 +7,10 @@
 
 static int FAIL(char *message, ...) {\
   va_list argument_pointer; va_start(argument_pointer, message);
-  printf(message, argument_pointer);
+  printf("Failure: ");
+  vprintf(message, argument_pointer);
+  va_end(argument_pointer);
   /* FIXME, set some flag or anything */
-  exit(1);
   return 0;
 }
 
@@ -223,6 +224,7 @@ static small_int has_double_quotes(CONST unicode_char* string) {
     if (string[index] == DOUBLE_QUOTE) {
       return 1;
     }
+    index++;
   }
   return 0;
 }
@@ -233,6 +235,7 @@ static small_int has_single_quotes(CONST unicode_char* string) {
     if (string[index] == SINGLE_QUOTE) {
       return 1;
     }
+    index++;
   }
   return 0;
 }
@@ -422,13 +425,13 @@ static source_buffer_index run_attribute_value(CONST unicode_char* buffer,
     character = read_unicode_character(buffer, offset+index);
     DEBUG_PRINT("Character: %c\n", (char) character);
     if (character == UNICODE_NULL) {
-      return 0;
+      return FAIL("Encountered Unicode NULL in attribute value %ld", offset);
     } else if (character == end_quote) {
       return offset + index;
     } else if (character == ELEMENT_STARTTAG) {
       /* < in an attribute value is a no-no */
       #ifndef TOLERATE_MINOR_ERRORS
-      return 0;
+      return FAIL("Encountered < in attribute start tag %ld", offset);
       #endif
     } else if (character == AMPERSAND) {
       if(!compare_unicode_string(buffer, offset+1,
@@ -437,7 +440,7 @@ static source_buffer_index run_attribute_value(CONST unicode_char* buffer,
       } else {
 	/* Improperly encoded & */
 	#ifndef TOLERATE_MINOR_ERRORS
-	return 0;
+	return FAIL("Encountered improperly encoded & %lu", offset);
 	#endif
       }
     }
@@ -894,7 +897,10 @@ static unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
 	  attribute_value_length = slice_string(buffer, offset+2,
 						attribute_value_length,
 						&new->attribute.content);
+	  printf("Worked with attribute, %ld, %i\n", offset,
+		 attribute_value_length);
 	  offset += attribute_value_length;
+	  offset += 3;
 	} else {
 	  return FAIL("Expected single or double quote, got %ld", character);
 	}
@@ -902,6 +908,10 @@ static unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
 	if (character == SLASH && (offset+1 == end)) {
 	  /* At the end of the empty element */
 	  offset++;
+	} else {
+	  char c; c = getc(stdin);
+	  return FAIL("Unexpected character %ld at position %ld",
+		      character, offset+1);
 	}
       }
     }
@@ -948,9 +958,10 @@ void print_tree(struct xml_item* start, int level, int count) {
   /* FIXME, indentation that preserves whitespace */
   struct xml_item *attributes = start->element.attributes;
   while (attributes) {
+    printf(" ");
     print_unicode(attributes->attribute.name);
     printf("=");
-    if (!has_double_quotes(attributes->attribute.content)) {
+    if (has_double_quotes(attributes->attribute.content)) {
       printf("\"");
       print_unicode(attributes->attribute.content);
       printf("\"");
