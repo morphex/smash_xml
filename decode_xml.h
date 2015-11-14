@@ -21,6 +21,8 @@ small_int compare_unicode_character_array(CONST unicode_char *buffer,CONST sourc
 small_int compare_unicode_character_array_char(CONST unicode_char character,CONST unicode_char *compare_to);
 int compare_unicode_character(CONST unicode_char *buffer,CONST source_buffer_index offset,CONST unicode_char compare_to);
 small_int compare_unicode_character_char(CONST unicode_char first,CONST unicode_char second);
+unicode_char *escape_double_quotes(unicode_char *source);
+small_int has_double_quotes(CONST unicode_char *string);
 struct xml_item *create_xml_attribute();
 struct xml_item *create_xml_text();
 struct xml_item *create_xml_element();

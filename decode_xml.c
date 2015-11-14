@@ -4,6 +4,7 @@
 #include <globals.h>
 #include <string.h>
 #include <constants.h>
+#include <locale.h>
 
 static int FAIL(char *message, ...) {\
   va_list argument_pointer; va_start(argument_pointer, message);
@@ -11,6 +12,7 @@ static int FAIL(char *message, ...) {\
   vprintf(message, argument_pointer);
   va_end(argument_pointer);
   /* FIXME, set some flag or anything */
+  exit(0);
   return 0;
 }
 
@@ -218,7 +220,8 @@ static unicode_char is_attribute_value_start(CONST unicode_char* buffer,
   }
 }
 
-static small_int has_double_quotes(CONST unicode_char* string) {
+/* FIXME, make static after debugging */
+small_int has_double_quotes(CONST unicode_char* string) {
   unicode_char_length index = 0;
   while (string[index] != UNICODE_NULL) {
     if (string[index] == DOUBLE_QUOTE) {
@@ -227,6 +230,11 @@ static small_int has_double_quotes(CONST unicode_char* string) {
     index++;
   }
   return 0;
+}
+
+unicode_char *escape_double_quotes(unicode_char* source) {
+  /* FIXME, implement */
+  return NULL;
 }
 
 static small_int has_single_quotes(CONST unicode_char* string) {
@@ -359,7 +367,7 @@ unicode_char_length slice_string(CONST unicode_char* buffer,
     return 0;
   }
   unicode_char_length slice_index = 0;
-  for (; start <= stop; start++) {
+  for (; start < stop; start++) {
     unicode_char character = read_unicode_character(buffer, start);
     DEBUG_PRINT("1 loop %c\t", (char)character);
     /* Found NULL before reaching 'stop', maybe realloc? */
@@ -897,10 +905,13 @@ static unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
 	  attribute_value_length = slice_string(buffer, offset+2,
 						attribute_value_length,
 						&new->attribute.content);
+	  printf("Sliced: ");
+	  print_unicode(new->attribute.content);
+	  printf("\n");
 	  DEBUG_PRINT("Worked with attribute, %ld, %i\n", offset,
 		 attribute_value_length);
 	  offset += attribute_value_length;
-	  offset += 3;
+	  offset += 4;
 	} else {
 	  return FAIL("Expected single or double quote, got %ld", character);
 	}
@@ -928,6 +939,7 @@ static unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
 */
 
 void print_tree(struct xml_item* start, int level, int count) {
+  setlocale(LC_ALL, "");
   char indentation[level+1]; memset(indentation,ASCII_TAB,level);
   indentation[level] = ASCII_NULL;
 #ifdef DEBUG
@@ -956,19 +968,26 @@ void print_tree(struct xml_item* start, int level, int count) {
   }
   /* FIXME, indentation that preserves whitespace */
   struct xml_item *attributes = start->element.attributes;
+  /* FIXME, smarter handling of quotes */
   while (attributes) {
     printf(" ");
     print_unicode(attributes->attribute.name);
     printf("=");
-    if (has_double_quotes(attributes->attribute.content)) {
+    if (!has_double_quotes(attributes->attribute.content)) {
       printf("\"");
       print_unicode(attributes->attribute.content);
       printf("\"");
-      attributes = attributes->next;
+    } else if (!has_single_quotes) {
+      printf("'");
+      print_unicode(attributes->attribute.content);
+      printf("'");
     } else {
-      FAIL("Single quotes etc. not supported yet %ld",
-	   has_single_quotes(attributes->attribute.content));
+      printf("\"");
+      printf("-FIXME, escape quotes-");
+      print_unicode(attributes->attribute.content);
+      printf("\"");
     }
+    attributes = attributes->next;
   }
   if (start->element.child != NULL) {
     printf("\n%s>", indentation);
