@@ -128,6 +128,7 @@ typedef unsigned long unicode_char_length;
   The amount of bytes we can read.
 
 */
+#define WRITE_AMOUNT 4096
 #define READ_AMOUNT 4096
 #define READ_BYTES 1024*100
 #if (READ_BYTES % READ_AMOUNT)

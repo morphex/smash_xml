@@ -977,18 +977,44 @@ void print_tree(struct xml_item* start, int level, int count) {
       printf("\"");
       print_unicode(attributes->attribute.content);
       printf("\"");
-    } else if (!has_single_quotes) {
+    } else if (!has_single_quotes(attributes->attribute.content)) {
       printf("'");
       print_unicode(attributes->attribute.content);
       printf("'");
     } else {
       printf("\"");
+      unicode_char write_buffer[WRITE_AMOUNT];
+      memset(write_buffer, UNICODE_NULL, WRITE_AMOUNT);
+      unicode_char_length read_index = 0;
+      unicode_char_length write_index = 0;
+      unicode_char character = UNICODE_NULL;
       printf("-FIXME, escape quotes-");
-      print_unicode(attributes->attribute.content);
+      do {
+	character = attributes->attribute.content[read_index++];
+	if ((write_index + 5 >= WRITE_AMOUNT)) {
+	    write_buffer[write_index] = UNICODE_NULL;
+	    print_unicode(write_buffer);
+	    memset(write_buffer, UNICODE_NULL, WRITE_AMOUNT);
+	    write_index = 0;
+	}
+	if (character == UNICODE_NULL) {
+	  memset(&write_buffer[write_index], UNICODE_NULL,
+		 WRITE_AMOUNT-write_index);
+        } else if (character != DOUBLE_QUOTE) {
+	    write_buffer[write_index++] = character;
+	  } else if (character == DOUBLE_QUOTE) {
+	    write_buffer[write_index++] = AMPERSAND;
+	    write_buffer[write_index++] = (unicode_char) "q";
+	    write_buffer[write_index++] = (unicode_char) "u";
+	    write_buffer[write_index++] = (unicode_char) "o";
+	    write_buffer[write_index++] = (unicode_char) "t";
+	    write_buffer[write_index++] = (unicode_char) ";";
+	}
+      } while (write_buffer[0] != UNICODE_NULL);
       printf("\"");
-    }
+      }
     attributes = attributes->next;
-  }
+    }
   if (start->element.child != NULL) {
     printf("\n%s>", indentation);
   } else {

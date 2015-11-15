@@ -26,3 +26,5 @@ Refactoring functions so they make use of slice_string
 Remove use of -fms-extensions
 
 Add tests for (!)TOLERATE_MINOR_ERRORS
+
+Add test for invalid trailing data, elements after root element.
