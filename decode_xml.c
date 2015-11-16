@@ -6,14 +6,14 @@
 #include <constants.h>
 #include <locale.h>
 
-static int FAIL(char *message, ...) {\
+static void* FAIL(char *message, ...) {\
   va_list argument_pointer; va_start(argument_pointer, message);
   printf("Failure: ");
   vprintf(message, argument_pointer);
   va_end(argument_pointer);
   /* FIXME, set some flag or anything */
   exit(0);
-  return 0;
+  return NULL;
 }
 
 struct parser* create_xml_parser() {
@@ -149,7 +149,8 @@ static unicode_char_length find_cdata_end(CONST unicode_char* buffer,
     }
     offset++;
   } while (character != UNICODE_NULL);
-  return FAIL("Reached end of find_cdata_end, %ld", offset);
+  FAIL("Reached end of find_cdata_end, %ld", offset);
+  return 0;
 }
 
 static unicode_char_length find_comment_end(CONST unicode_char* buffer,
@@ -166,7 +167,8 @@ static unicode_char_length find_comment_end(CONST unicode_char* buffer,
     }
     offset++;
   } while (character != UNICODE_NULL);
-  return FAIL("Reached end of find_comment_end, %ld", offset);
+  FAIL("Reached end of find_comment_end, %ld", offset);
+  return 0;
 }
 
 static unicode_char_length find_element_endtag(CONST unicode_char* buffer,
@@ -179,7 +181,8 @@ static unicode_char_length find_element_endtag(CONST unicode_char* buffer,
     }
     offset++;
   } while (character != UNICODE_NULL);
-  return FAIL("Reached end of find_element_endtag, %ld", offset);
+  FAIL("Reached end of find_element_endtag, %ld", offset);
+  return 0;
 }
 
 static unicode_char_length find_processing_instruction_end\
@@ -194,7 +197,8 @@ static unicode_char_length find_processing_instruction_end\
     }
     offset++;
   } while (character != UNICODE_NULL);
-  return FAIL("Could not find end of processing instruction, %ld", offset);
+  FAIL("Could not find end of processing instruction, %ld", offset);
+  return 0;
 }
 
 static small_int is_comment_start(CONST unicode_char* buffer,
@@ -237,12 +241,35 @@ unicode_char *escape_double_quotes(unicode_char* source) {
   return NULL;
 }
 
+/*
+  Prints unicode_char array.
+*/
+void print_unicode(CONST unicode_char* buffer) {
+  unicode_char_length index = 0;
+  DEBUG_PRINT("print_unicode: %ld\n", (unsigned long) &buffer);
+  while (buffer[index] != UNICODE_NULL) {
+    printf("%c", (char) buffer[index]);
+    index++;
+  }
+  fflush(NULL); /* FIXME, remove, for gdb print */
+#ifdef DEBUG
+  printf("  ");
+  index = 0;
+  while (buffer[index] != UNICODE_NULL) {
+    DEBUG_PRINT("%ld,", (unsigned long) buffer[index]);
+    index++;
+  }
+  DEBUG_PRINT("\nindex %i\n", index);
+  DEBUG_PRINT("\nend print_unicode\n", 0);
+#endif
+}
+
 /* Replaces XML entities with regular Unicode characters */
 unicode_char *reduce_entities(unicode_char* source,
 			      unicode_char_length offset) {
   unicode_char* destination = malloc(sizeof(unicode_char)*1024);
   unicode_char_length destination_index = 0;
-  unicode_char entity[10]; memset(entity, UNICODE_NULL, sizeof(entity));
+  unicode_char entity[10] = {0,0,0,0,0,0,0,0,0,0}; 
   unicode_char_length entity_index = 0;
   small_int is_entity = 0;
   do {
@@ -320,7 +347,8 @@ small_int compare_unicode_character_char(CONST unicode_char first,
     return 1;
   if (first < second)
     return -1;
-  return FAIL("Reached end of compare_unicode_character_char", 0);
+  FAIL("Reached end of compare_unicode_character_char", 0);
+  return 0;
 }
 
 /* Returns 0 if strings are equal */
@@ -337,7 +365,7 @@ small_int compare_unicode_character_array_char\
  (CONST unicode_char character, CONST unicode_char* compare_to){
 
   int index = 0;
-  unicode_char current_comparison = NULL;
+  unicode_char current_comparison = UNICODE_NULL;
   while (1) {
     current_comparison = compare_to[index];
     DEBUG_PRINT("compare_unicode_character_array: %c - %c\n",
@@ -389,29 +417,6 @@ static int is_whitespace(CONST unicode_char* buffer,
 }
 
 /*
-  Prints unicode_char array.
-*/
-void print_unicode(CONST unicode_char* buffer) {
-  DEBUG_PRINT("print_unicode: %ld\n", (unsigned long) &buffer);
-  unicode_char_length index = 0;
-  while (buffer[index] != UNICODE_NULL) {
-    printf("%c", (char) buffer[index]);
-    index++;
-  }
-  fflush(NULL); /* FIXME, remove, for gdb print */
-#ifdef DEBUG
-  printf("  ");
-  index = 0;
-  while (buffer[index] != UNICODE_NULL) {
-    DEBUG_PRINT("%ld,", (unsigned long) buffer[index]);
-    index++;
-  }
-  DEBUG_PRINT("\nindex %i\n", index);
-  DEBUG_PRINT("\nend print_unicode\n", 0);
-#endif
-}
-
-/*
   Gets a unicode char string from a character array.
 
   String terminated by NULL.
@@ -424,12 +429,12 @@ unicode_char_length slice_string(CONST unicode_char* buffer,
 				 CONST unicode_char_length stop,
 				 unicode_char **slice) {
   unicode_char_length size = stop - start;
-  unicode_char_length allocate_bytes = (size + 2) * UNICODE_STORAGE_BYTES;
-  unicode_char *local_slice = malloc(allocate_bytes); memset(local_slice, 0, allocate_bytes);
+  unicode_char_length allocate = (size + 2);
+  unicode_char_length slice_index = 0;
+  unicode_char *local_slice = calloc(allocate, UNICODE_STORAGE_BYTES);
   if (local_slice == 0) {
     return 0;
   }
-  unicode_char_length slice_index = 0;
   for (; start < stop; start++) {
     unicode_char character = read_unicode_character(buffer, start);
     DEBUG_PRINT("1 loop %c\t", (char)character);
@@ -442,7 +447,7 @@ unicode_char_length slice_string(CONST unicode_char* buffer,
   }
   local_slice[slice_index] = UNICODE_NULL;
   *slice = local_slice;
-  DEBUG_PRINT("\nSlice index: %i,allocate_bytes %i\n", slice_index, allocate_bytes);
+  DEBUG_PRINT("\nSlice index: %i,allocate %i\n", slice_index, allocate);
   return slice_index;
 }
 
@@ -496,7 +501,8 @@ static source_buffer_index run_attribute_value(CONST unicode_char* buffer,
     character = read_unicode_character(buffer, offset+index);
     DEBUG_PRINT("Character: %c\n", (char) character);
     if (character == UNICODE_NULL) {
-      return FAIL("Encountered Unicode NULL in attribute value %ld", offset);
+      FAIL("Encountered Unicode NULL in attribute value %ld", offset);
+      return 0;
     } else if (character == end_quote) {
       return offset + index;
     } else if (character == ELEMENT_STARTTAG) {
@@ -535,7 +541,8 @@ source_buffer_index get_length(CONST char* string) {
 	return index;
     }
   }
-  return FAIL("Reached end of get_length without a return value %ul", index);
+  FAIL("Reached end of get_length without a return value %ul", index);
+  return 0;
 }
 
 source_buffer_index get_length_unicode(CONST unicode_char* string) {
@@ -545,8 +552,8 @@ source_buffer_index get_length_unicode(CONST unicode_char* string) {
 	return index;
       }
   }
-  return FAIL("Reached end of get_length_unicode without a return value %ul",
-	      index);
+  FAIL("Reached end of get_length_unicode without a return value %ul", index);
+  return index;
 }
 
 small_int compare_unicode_strings(unicode_char* first,
@@ -668,11 +675,11 @@ static small_int is_name_start_character(CONST unicode_char* buffer,
 
 static small_int is_name_character(CONST unicode_char* buffer,
 			    CONST source_buffer_index offset) {
+  unicode_char character = read_unicode_character(buffer, offset);
   if (is_name_start_character(buffer, offset)) {
     DEBUG_PRINT("name start 1\n", 0);
     return 1;
   }
-  unicode_char character = read_unicode_character(buffer, offset);
   if(character == 0x002D || character == 0x002E || character == 0x00B7) {
     DEBUG_PRINT("name start 2\n", 0);
     return 1;
@@ -700,14 +707,14 @@ static unicode_char convert_char_to_unicode_char(char character) {
 small_int compare_unicode_array_char_array(unicode_char *unicode,
 					   char *characters) {
   source_buffer_index number_of_characters = strlen(characters);
-  if (number_of_characters >= UNICODE_CHAR_MAX) {
-    /* FIXME, deal with this and stringth lengths */
-    return 0;
-  }
   unicode_char reference = UNICODE_NULL;
   unicode_char compare_to = UNICODE_NULL;
   small_int result = 0;
   source_buffer_index index = 0;
+  if (number_of_characters >= UNICODE_CHAR_MAX) {
+    /* FIXME, deal with this and stringth lengths */
+    return 0;
+  }
   for (; index < number_of_characters; index++) {
     reference = unicode[index];
     compare_to = convert_char_to_unicode_char(characters[index]);
@@ -717,7 +724,7 @@ small_int compare_unicode_array_char_array(unicode_char *unicode,
     }
   }
   return result;
-};
+}
 
 /*
   Function that parses an attribute name and returns a
@@ -728,12 +735,14 @@ small_int compare_unicode_array_char_array(unicode_char *unicode,
 static small_buffer_index run_attribute_name(CONST unicode_char* buffer,
 					    CONST source_buffer_index position,
 					     unicode_char **attribute) {
-  if (!is_name_start_character(buffer, position)) {
-    return 0;
-  }
+  source_buffer_index index = 0;
+  unicode_char character = 0;
   unicode_char *attribute_storage = malloc(sizeof(unicode_char)*
 					   MAXIMUM_NAME_SIZE);
   memset(attribute_storage, 0, MAXIMUM_NAME_SIZE*sizeof(unicode_char));
+  if (!is_name_start_character(buffer, position)) {
+    return 0;
+  }
   if (attribute_storage == 0) {
     return 0;
   }
@@ -741,8 +750,6 @@ static small_buffer_index run_attribute_name(CONST unicode_char* buffer,
     Could've skipped the first character but adding
     it via the loop to keep the code simple.
   */
-  source_buffer_index index = 0;
-  unicode_char character = 0;
   DEBUG_PRINT("In run_attribute_name..\n", 0);
   do {
     if (index > MAXIMUM_NAME_SIZE) {
@@ -789,17 +796,17 @@ static small_buffer_index run_element_name (CONST unicode_char* buffer,
 					    CONST source_buffer_index position,
 					    unicode_char_length end,
 					    unicode_char **element_name) {
+  unicode_char *element_name_storage = malloc(sizeof(unicode_char)*
+					   MAXIMUM_NAME_SIZE);
+  source_buffer_index index = 0;
+  unicode_char character = 0;
+  memset(element_name_storage, 0, MAXIMUM_NAME_SIZE*sizeof(unicode_char));
   if (!is_name_start_character(buffer, position)) {
     return 0;
   }
-  unicode_char *element_name_storage = malloc(sizeof(unicode_char)*
-					   MAXIMUM_NAME_SIZE);
-  memset(element_name_storage, 0, MAXIMUM_NAME_SIZE*sizeof(unicode_char));
   if (element_name_storage == 0) {
     return 0;
   }
-  source_buffer_index index = 0;
-  unicode_char character = 0;
   DEBUG_PRINT("In run_element_name..\n", 0);
   do {
     if (index > MAXIMUM_NAME_SIZE) {
@@ -857,10 +864,15 @@ source_buffer_index read_into_buffer(unicode_char* buffer,
 				     FILE* file,
 				     small_int* valid_unicode) {
   unsigned char temporary_bom[4] = {0,0,0,0};
-  fread(temporary_bom, sizeof(char), 4, file);
-  unicode_char bom[1] = {_read_unicode_character(temporary_bom, 0),};
   source_buffer_index read = 4; /* BOM */
   source_buffer_index read_temporary = 0;
+  source_buffer_index index = 0;
+  unicode_char_length buffer_index = 0;
+  unicode_char character = UNICODE_NULL;
+  unsigned char *temporary_buffer = calloc(READ_AMOUNT, sizeof(char));
+  unicode_char bom[1] = {0};
+  fread(temporary_bom, sizeof(char), 4, file);
+  bom[0] = _read_unicode_character(temporary_bom, 0);
   if (!is_valid_bom(bom)) {
     DEBUG_PRINT("Is valid BOM: %i\n", is_valid_bom(bom));
     *valid_unicode = 0;
@@ -871,10 +883,6 @@ source_buffer_index read_into_buffer(unicode_char* buffer,
     /* Maximum file size, verify that this works FIXME */
     amount = 2 << 30;
   }
-  unsigned char temporary_buffer[READ_AMOUNT]; memset(temporary_buffer, 0, READ_AMOUNT);
-  source_buffer_index index = 0;
-  unicode_char_length buffer_index = 0;
-  unicode_char character = UNICODE_NULL;
   DEBUG_PRINT("1: %ld,%ld,%ld,%ld\n", read, amount, buffer_index, size);
   for (; read < size && buffer_index < amount; read += READ_AMOUNT) {
     read_temporary = fread(temporary_buffer, sizeof(char), READ_AMOUNT, file);
@@ -914,7 +922,8 @@ int is_valid_stream(CONST source_buffer_index read) {
 	buffer, each 32 bit unicode symbol consists of
       4 bytes, 32 bits.
       */
-      return FAIL("Corrupted Unicode stream, %ld bytes", read);
+      FAIL("Corrupted Unicode stream, %ld bytes", read);
+      return 0;
     }
     return 1;
 }
@@ -929,11 +938,15 @@ static unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
   */
   unicode_char *element_name = NULL;
   small_buffer_index result = 0;
+  unicode_char character = UNICODE_NULL;
+  unicode_char_length attribute_value_length = 0;
+  struct xml_item *previous = NULL;
   struct xml_item *element = current;
   result = run_element_name(buffer, offset-1, end, &element_name);
   offset = offset+result;
   if (result == 0) {
-    return FAIL("run_element_name result 0\n", 0);
+    FAIL("run_element_name result 0\n", 0);
+    return 0;
   }
   DEBUG_PRINT(element_name, 0);
   element->element.name = element_name;
@@ -941,9 +954,6 @@ static unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
 #ifdef DEBUG
   print_unicode(element->element.name);
 #endif
-  unicode_char character = UNICODE_NULL;
-  unicode_char_length attribute_value_length = 0;
-  struct xml_item *previous = NULL;
   while (offset < end) {
     if (is_whitespace(buffer, offset)) {
       offset++;
@@ -976,15 +986,17 @@ static unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
 	  offset += attribute_value_length;
 	  offset += 4;
 	} else {
-	  return FAIL("Expected single or double quote, got %ld", character);
+	  FAIL("Expected single or double quote, got %ld", character);
+	  return 0;
 	}
       } else {
 	if (character == SLASH && (offset+1 == end)) {
 	  /* At the end of the empty element */
 	  offset++;
 	} else {
-	  return FAIL("Unexpected character %ld at position %ld",
-		      character, offset+1);
+	  FAIL("Unexpected character %ld at position %ld",
+	       character, offset+1);
+	  return 0;
 	}
       }
     }
@@ -1002,8 +1014,10 @@ static unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
 */
 
 void print_tree(struct xml_item* start, int level, int count) {
+  char *indentation = calloc(level+1, sizeof(char));
+  struct xml_item *attributes = start->element.attributes;
+  memset(indentation,ASCII_TAB,level);
   setlocale(LC_ALL, "");
-  char indentation[level+1]; memset(indentation,ASCII_TAB,level);
   indentation[level] = ASCII_NULL;
 #ifdef DEBUG
   if (start->type < 3 && (start->parent != NULL)) {
@@ -1030,7 +1044,6 @@ void print_tree(struct xml_item* start, int level, int count) {
     printf("ROOT");
   }
   /* FIXME, indentation that preserves whitespace */
-  struct xml_item *attributes = start->element.attributes;
   /* FIXME, smarter handling of quotes */
   while (attributes) {
     printf(" ");
@@ -1045,12 +1058,12 @@ void print_tree(struct xml_item* start, int level, int count) {
       print_unicode(attributes->attribute.content);
       printf("'");
     } else {
-      printf("\"");
       unicode_char write_buffer[WRITE_AMOUNT];
-      memset(write_buffer, UNICODE_NULL, WRITE_AMOUNT);
       unicode_char_length read_index = 0;
       unicode_char_length write_index = 0;
       unicode_char character = UNICODE_NULL;
+      memset(write_buffer, UNICODE_NULL, WRITE_AMOUNT);
+      printf("\"");
       printf("-FIXME, escape quotes-");
       do {
 	character = attributes->attribute.content[read_index++];
@@ -1114,17 +1127,25 @@ void print_tree(struct xml_item* start, int level, int count) {
 
 /* Receives a file object, returns a pointer to a parsed XML document */
 struct xml_item* parse_file(FILE *file) {
-  unicode_char *buffer = NULL;
   long file_descriptor = fileno(file);
   struct stat file_stat; fstat(file_descriptor, &file_stat);
   source_buffer_index file_size = file_stat.st_size;
   struct xml_item *root = create_xml_element();
   /* FIXME, right place to malloc, here or in function */
   /* file_size/4 includes BOM, which can be used for end NULL */
-  buffer = malloc(sizeof(unicode_char) * (file_size/4)); memset(buffer, 0, sizeof(unicode_char) * (file_size/4));
+  unicode_char *buffer = calloc(sizeof(unicode_char) * (file_size/4),
+				sizeof(char));
   small_int valid_unicode = 0;
   unicode_char_length \
     characters = read_into_buffer(buffer, file_size, 0, file, &valid_unicode);
+  unicode_char_length index = 0;
+  unicode_char character = UNICODE_NULL;
+  unicode_char look_ahead = UNICODE_NULL;
+  struct xml_item *current = root;
+  struct xml_item *previous = NULL;
+  struct xml_item *closed_tag = NULL;
+  struct xml_stack *element_stack = create_xml_stack();
+  small_int empty_element = 0;
 #ifdef DEBUG
   printf("Characters: %ld\n", characters);
   printf("Allocated: %ld\n", sizeof(unicode_char) * (file_size/4));
@@ -1135,14 +1156,6 @@ struct xml_item* parse_file(FILE *file) {
 #ifdef DEBUG
   printf("Read %ld characters\n", characters);
 #endif
-  unicode_char_length index = 0;
-  unicode_char character = UNICODE_NULL;
-  unicode_char look_ahead = UNICODE_NULL;
-  struct xml_item *current = root;
-  struct xml_item *previous = NULL;
-  struct xml_item *closed_tag = NULL;
-  struct xml_stack *element_stack = create_xml_stack();
-  small_int empty_element = 0;
   for (; index < characters; index++) {
     character = read_unicode_character(buffer, index);
     /*
@@ -1171,13 +1184,13 @@ struct xml_item* parse_file(FILE *file) {
 	*/
 	unicode_char_length end = find_element_endtag(buffer, index+2);
 	unicode_char* element_name = NULL;
+	struct xml_item *tag = NULL;
 	run_element_name(buffer, index+2, end, &element_name);
 	DEBUG_PRINT("Element name: ", 0);
 #ifdef DEBUG
 	print_unicode(element_name);
 #endif
 	DEBUG_PRINT("\n", 0);
-	struct xml_item *tag = NULL;
 	tag = element_stack->element;
 	if (tag->type == 3 &&
 	    !compare_unicode_strings(tag->element.name, element_name)) {
@@ -1203,10 +1216,10 @@ struct xml_item* parse_file(FILE *file) {
 	DEBUG_PRINT("End of element endtag: %ld\n", index);
       } else if (is_name_start_character_char(look_ahead)) {
 	/* Regular element section */
-	DEBUG_PRINT("Look ahead: %ld\n", (unsigned long) look_ahead);
 	unicode_char_length element_end = find_element_endtag(buffer, index+2);
-	empty_element = buffer[element_end-1] == SLASH;
 	struct xml_item *new = create_xml_element();
+	DEBUG_PRINT("Look ahead: %ld\n", (unsigned long) look_ahead);
+	empty_element = buffer[element_end-1] == SLASH;
 	if (previous == NULL) {
 	  current->element.child = new;
 	  new->parent = current;
