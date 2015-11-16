@@ -237,6 +237,68 @@ unicode_char *escape_double_quotes(unicode_char* source) {
   return NULL;
 }
 
+/* Replaces XML entities with regular Unicode characters */
+unicode_char *reduce_entities(unicode_char* source,
+			      unicode_char_length offset) {
+  unicode_char* destination = malloc(sizeof(unicode_char)*1024);
+  unicode_char_length destination_index = 0;
+  unicode_char entity[10]; memset(entity, UNICODE_NULL, sizeof(entity));
+  unicode_char_length entity_index = 0;
+  small_int is_entity = 0;
+  do {
+    if (!(destination_index % 1023)) {
+      /* FIXME, memset */
+      destination = realloc(destination,
+			    (destination_index + 1024) * sizeof(unicode_char));
+    }
+    if (source[offset] == UNICODE_NULL) {
+      return destination;
+    }
+    if (source[offset] == AMPERSAND) {
+      is_entity = 1;
+    } else if (is_entity) {
+      if (entity_index > 8) {
+	return FAIL("Entity too large");
+      }
+      if (source[offset] != SEMICOLON) {
+	entity[entity_index++] = source[offset];
+      } else {
+	if (entity[0] == (unicode_char) 0x61 && /* a */
+	    entity[1] == (unicode_char) 0x6D && /* m */
+	    entity[2] == (unicode_char) 0x70) { /* p */
+	  destination[destination_index++] = AMPERSAND;
+	} else if (entity[0] == (unicode_char) 0x71 && /* q */
+		   entity[1] == (unicode_char) 0x75 && /* u */
+		   entity[2] == (unicode_char) 0x6F && /* o */
+		   entity[3] == (unicode_char) 0x74) { /* t */
+	  destination[destination_index++] = DOUBLE_QUOTE;
+	} else if (entity[0] == (unicode_char) 0x61 && /* a */
+		   entity[1] == (unicode_char) 0x70 && /* p */
+		   entity[2] == (unicode_char) 0x6F && /* o */
+		   entity[3] == (unicode_char) 0x73) { /* s */
+	  destination[destination_index++] = SINGLE_QUOTE;
+	} else if (entity[0] == (unicode_char) 0x6C && /* l */
+		   entity[1] == (unicode_char) 0x74) { /* t */
+	  destination[destination_index++] = ELEMENT_STARTTAG;
+	} else if (entity[0] == (unicode_char) 0x67 && /* g */
+		   entity[1] == (unicode_char) 0x74) { /* t */
+	  destination[destination_index++] = ELEMENT_ENDTAG;
+	} else {
+	  /* FIXME, Unicode digit representation */
+	  print_unicode(entity);
+	  return FAIL("Couldn't recognize entity");
+	}
+	memset(entity, UNICODE_NULL, sizeof(entity));
+	entity_index = 0;
+	is_entity = 0;
+      }
+    } else { /* is_entity */
+      destination[destination_index++] = source[offset];
+    }
+    offset++;
+  } while (1);
+}
+
 static small_int has_single_quotes(CONST unicode_char* string) {
   unicode_char_length index = 0;
   while (string[index] != UNICODE_NULL) {

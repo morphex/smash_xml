@@ -105,6 +105,8 @@ typedef unsigned long unicode_char_length;
 
 #define SPACE (unicode_char) 0x20
 
+#define SEMICOLON (unicode_char) 0x3b
+
 /*
   Whether to be tolerant to minor errors in XML markup.
 

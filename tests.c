@@ -98,6 +98,12 @@ int main() {
     if (equal_sign != EQUAL_CHARACTER) {
       HANDLE_ERROR("Expected equal sign at position 28, got %ld", equal_sign);
     }
+    unicode_char* attribute_value = NULL;
+    slice_string(buffer, 561, 586, &attribute_value);
+    attribute_value = reduce_entities(attribute_value, 0);
+    if (attribute_value[9] != DOUBLE_QUOTE) {
+      HANDLE_ERROR("Expected double quote at position 9");
+    }
   }
   /* Attribute reading tests */
   if (test_attribute) {
