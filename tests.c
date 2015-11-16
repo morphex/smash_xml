@@ -20,17 +20,18 @@ int main() {
   test_miscellaneous = rat; test_compare = rat; test_search = rat;
   test_slice_and_length = rat;
   test_parse_file = rat;
-  unicode_char *buffer = NULL;
-  source_buffer_index read = 0;
-  small_int valid_unicode = 0;
+  unicode_char *buffer;
+  buffer = NULL;
+  source_buffer_index read; read = 0;
+  small_int valid_unicode; valid_unicode = 0;
   buffer = malloc(READ_BYTES);
-  FILE *file = NULL;
+  FILE *file; file = NULL;
   file = fopen("test.xml", "rb+");
   read = read_into_buffer(buffer, READ_BYTES, 0, file, &valid_unicode);
   fclose(file);
   DEBUG_PRINT("Read: %ld\n", read);
   /* print_unicode(buffer); */
-  unicode_char_length offset = 0;
+  unicode_char_length offset; offset = 0;
   if (read < 200) {
     HANDLE_ERROR("test.xml less than %ld bytes\n", read*4);
   }
@@ -57,8 +58,9 @@ int main() {
 #ifdef DEBUG
     printf("test_attribute\n");
 #endif
-    unicode_char quote = read_unicode_character(buffer, offset+29);
-    unsigned long result3 = run_attribute_value(buffer, offset+30, quote);
+    unicode_char quote; quote = read_unicode_character(buffer, offset+29);
+    unsigned long result3; result3 = run_attribute_value(buffer, offset+30,
+							 quote);
     if (result3 != 38) {
       HANDLE_ERROR("Expected position 38, got position %i", result3);
     }
@@ -186,8 +188,8 @@ int main() {
     printf("test_slice_and_length\n");
 #endif
     source_buffer_index length = get_length_unicode(buffer);
-    if (length != 805) {
-      HANDLE_ERROR("Expected length of 805, got %lu\n", length);
+    if (length != 872) {
+      HANDLE_ERROR("Expected length of 872, got %lu\n", length);
     }
     unicode_char *attribute = NULL;
     unicode_char_length end = 0;
@@ -198,8 +200,8 @@ int main() {
     slice_string(buffer, (unicode_char_length) offset+362, end-1, &attribute);
     /* print_unicode(attribute); */
     length = get_length_unicode(attribute);
-    if (length != 12) {
-      HANDLE_ERROR("Expected length of 12, got %i", length);
+    if (length != 11) {
+      HANDLE_ERROR("Expected length of 11, got %i", length);
     }
     free(attribute);
     attribute = NULL;

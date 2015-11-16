@@ -266,28 +266,29 @@ unicode_char *reduce_entities(unicode_char* source,
 	if (entity[0] == (unicode_char) 0x61 && /* a */
 	    entity[1] == (unicode_char) 0x6D && /* m */
 	    entity[2] == (unicode_char) 0x70) { /* p */
-	  destination[destination_index++] = AMPERSAND;
+	  destination[destination_index] = AMPERSAND;
 	} else if (entity[0] == (unicode_char) 0x71 && /* q */
 		   entity[1] == (unicode_char) 0x75 && /* u */
 		   entity[2] == (unicode_char) 0x6F && /* o */
 		   entity[3] == (unicode_char) 0x74) { /* t */
-	  destination[destination_index++] = DOUBLE_QUOTE;
+	  destination[destination_index] = DOUBLE_QUOTE;
 	} else if (entity[0] == (unicode_char) 0x61 && /* a */
 		   entity[1] == (unicode_char) 0x70 && /* p */
 		   entity[2] == (unicode_char) 0x6F && /* o */
 		   entity[3] == (unicode_char) 0x73) { /* s */
-	  destination[destination_index++] = SINGLE_QUOTE;
+	  destination[destination_index] = SINGLE_QUOTE;
 	} else if (entity[0] == (unicode_char) 0x6C && /* l */
 		   entity[1] == (unicode_char) 0x74) { /* t */
-	  destination[destination_index++] = ELEMENT_STARTTAG;
+	  destination[destination_index] = ELEMENT_STARTTAG;
 	} else if (entity[0] == (unicode_char) 0x67 && /* g */
 		   entity[1] == (unicode_char) 0x74) { /* t */
-	  destination[destination_index++] = ELEMENT_ENDTAG;
+	  destination[destination_index] = ELEMENT_ENDTAG;
 	} else {
 	  /* FIXME, Unicode digit representation */
 	  print_unicode(entity);
 	  return FAIL("Couldn't recognize entity");
 	}
+	destination_index++;
 	memset(entity, UNICODE_NULL, sizeof(entity));
 	entity_index = 0;
 	is_entity = 0;
