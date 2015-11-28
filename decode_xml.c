@@ -5,6 +5,7 @@
 #include <string.h>
 #include <constants.h>
 #include <locale.h>
+#include <decode_xml.h>
 
 static void* FAIL(char *message, ...) {\
   va_list argument_pointer; va_start(argument_pointer, message);
@@ -978,9 +979,11 @@ static unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
 	  attribute_value_length = slice_string(buffer, offset+2,
 						attribute_value_length,
 						&new->attribute.content);
+#ifdef DEBUG
 	  printf("Sliced: ");
 	  print_unicode(new->attribute.content);
 	  printf("\n");
+#endif
 	  DEBUG_PRINT("Worked with attribute, %ld, %i\n", offset,
 		 attribute_value_length);
 	  offset += attribute_value_length;
@@ -1024,10 +1027,10 @@ void print_tree(struct xml_item* start, int level, int count) {
     FAIL("Type of xml_item < 3: %i", start->type);
   }
 #endif
-  if (start->previous == NULL && 0) {
-    printf("%s<", indentation);
+  if (start->element.name != NULL) {
+    printf("<");
   } else {
-    printf("<");    
+    printf("<?xml version='1.0' encoding='UTF32-LE' ?>\n");
   }
 #ifdef DEBUG
   if (start == start->next) {
@@ -1040,8 +1043,6 @@ void print_tree(struct xml_item* start, int level, int count) {
   
   if (start->element.name != NULL) {
     print_unicode(start->element.name);
-  } else {
-    printf("ROOT");
   }
   /* FIXME, indentation that preserves whitespace */
   /* FIXME, smarter handling of quotes */
@@ -1091,34 +1092,29 @@ void print_tree(struct xml_item* start, int level, int count) {
       }
     attributes = attributes->next;
     }
-  if (start->element.child != NULL) {
+  if (start->element.child != NULL && start->element.name != NULL) {
     printf("\n%s>", indentation);
-  } else {
+  } else if (start->element.name != NULL) {
     printf(">");
+  }
+  int closed = 0;
+  if (start->element.child != NULL) {
+    DEBUG_PRINT("start->child != NULL", 0);
+    print_tree(start->element.child, level+1, count+1);
   }
   if (start->next != NULL) {
     printf("</");
     print_unicode(start->element.name);
     printf("\n%s>", indentation);
+    closed = 1;
     DEBUG_PRINT("print_tree, %i, %ld, %i\n", level, (unsigned long) &start,
 		count);
     print_tree(start->next, level, count+1);
-  } else if (start->element.child != NULL) {
-    DEBUG_PRINT("start->child != NULL", 0);
-    print_tree(start->element.child, level+1, count+1);
   }
-  else {
+  if (!closed && start->element.name != NULL) {
     printf("</");
     print_unicode(start->element.name);
-    printf("\n%s>", indentation);    
-  }
-  if (start->element.name != NULL && start->parent->parent &&
-      start->previous == NULL) {
-    printf("</");
-    print_unicode(start->parent->element.name);
-    printf("\n>");
-  } else if (start->parent == NULL) {
-    printf("</ROOT>\n");
+    printf("\n%s>", indentation);
   }
 }
 
