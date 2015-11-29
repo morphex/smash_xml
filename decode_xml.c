@@ -1023,10 +1023,11 @@ void print_tree_header(struct xml_item* start, int level, int standalone) {
   } else {
     printf("<?xml version='1.0' encoding='UTF32-LE' standalone='no'?>\n");
   }
-  return print_tree(start->element.child, level, 0);
+  print_tree(start->element.child, level, 0);
 }
 
 void print_tree(struct xml_item* start, int level, int count) {
+  int closed = 0;
   char *indentation = calloc(level+1, sizeof(char));
   struct xml_item *attributes = start->element.attributes;
   memset(indentation,ASCII_TAB,level);
@@ -1100,7 +1101,6 @@ void print_tree(struct xml_item* start, int level, int count) {
     printf("\n%s", indentation);
   }
   printf(">");
-  int closed = 0;
   if (start->element.child != NULL) {
     DEBUG_PRINT("start->child != NULL", 0);
     print_tree(start->element.child, level+1, count+1);
@@ -1126,25 +1126,30 @@ void print_tree(struct xml_item* start, int level, int count) {
 
 /* Receives a file object, returns a pointer to a parsed XML document */
 struct xml_item* parse_file(FILE *file) {
-  long file_descriptor = fileno(file);
-  struct stat file_stat; fstat(file_descriptor, &file_stat);
-  source_buffer_index file_size = file_stat.st_size;
-  struct xml_item *root = create_xml_element();
-  /* FIXME, right place to malloc, here or in function */
-  /* file_size/4 includes BOM, which can be used for end NULL */
-  unicode_char *buffer = calloc(sizeof(unicode_char) * (file_size/4),
-				sizeof(char));
-  small_int valid_unicode = 0;
-  unicode_char_length \
-    characters = read_into_buffer(buffer, file_size, 0, file, &valid_unicode);
-  unicode_char_length index = 0;
+  source_buffer_index file_size;
+  struct xml_item *root;
+  unicode_char *buffer;
+  small_int valid_unicode;
+  unicode_char_length characters;
+  unicode_char_length index;
   unicode_char character = UNICODE_NULL;
   unicode_char look_ahead = UNICODE_NULL;
-  struct xml_item *current = root;
+  struct xml_item *current;
   struct xml_item *previous = NULL;
   struct xml_item *closed_tag = NULL;
-  struct xml_stack *element_stack = create_xml_stack();
+  struct xml_stack *element_stack;
   small_int empty_element = 0;
+  long file_descriptor = fileno(file);
+  struct stat file_stat; fstat(file_descriptor, &file_stat);
+  file_size = file_stat.st_size;
+  current = root = create_xml_element();
+  /* FIXME, right place to malloc, here or in function */
+  /* file_size/4 includes BOM, which can be used for end NULL */
+  buffer = calloc(sizeof(unicode_char) * (file_size/4), sizeof(char));
+  valid_unicode = 0;
+  characters = read_into_buffer(buffer, file_size, 0, file, &valid_unicode);
+  index = 0;
+  element_stack = create_xml_stack();
 #ifdef DEBUG
   printf("Characters: %ld\n", characters);
   printf("Allocated: %ld\n", sizeof(unicode_char) * (file_size/4));
