@@ -4,6 +4,7 @@ int main();
 #endif
 struct xml_item *parse_file(FILE *file);
 void print_tree(struct xml_item *start,int level,int count);
+void print_tree_header(struct xml_item *start,int level,int standalone);
 int is_valid_stream(CONST source_buffer_index read);
 source_buffer_index read_into_buffer(unicode_char *buffer,CONST source_buffer_index size,source_buffer_index amount,FILE *file,small_int *valid_unicode);
 small_int is_valid_bom(CONST unicode_char *buffer);

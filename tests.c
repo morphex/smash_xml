@@ -214,7 +214,7 @@ int main() {
     FILE* file = fopen("test.xml", "rb+");
     struct xml_item *result = parse_file(file);
     fflush(NULL);
-    print_tree(result, 0, 0);
+    print_tree_header(result, 0, 1);
     printf("\n");
     fflush(NULL);
   }

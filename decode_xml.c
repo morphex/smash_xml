@@ -1013,8 +1013,18 @@ static unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
   Function that goes down through an xml_item tree,
   printing the contents.
 
-  FIXME, level counter type.
+  FIXME, level counter type, only necessary for testing
+  and debugging.
 */
+
+void print_tree_header(struct xml_item* start, int level, int standalone) {
+  if (standalone) {
+    printf("<?xml version='1.0' encoding='UTF32-LE' standalone='yes'?>\n");
+  } else {
+    printf("<?xml version='1.0' encoding='UTF32-LE' standalone='no'?>\n");
+  }
+  return print_tree(start->element.child, level, 0);
+}
 
 void print_tree(struct xml_item* start, int level, int count) {
   char *indentation = calloc(level+1, sizeof(char));
@@ -1027,11 +1037,7 @@ void print_tree(struct xml_item* start, int level, int count) {
     FAIL("Type of xml_item < 3: %i", start->type);
   }
 #endif
-  if (start->element.name != NULL) {
-    printf("<");
-  } else {
-    printf("<?xml version='1.0' encoding='UTF32-LE' ?>\n");
-  }
+  printf("<");
 #ifdef DEBUG
   if (start == start->next) {
     FAIL("Circular pointers start->next, %i", __LINE__);
@@ -1041,9 +1047,7 @@ void print_tree(struct xml_item* start, int level, int count) {
   }
 #endif
   
-  if (start->element.name != NULL) {
-    print_unicode(start->element.name);
-  }
+  print_unicode(start->element.name);
   /* FIXME, indentation that preserves whitespace */
   /* FIXME, smarter handling of quotes */
   while (attributes) {
@@ -1092,11 +1096,10 @@ void print_tree(struct xml_item* start, int level, int count) {
       }
     attributes = attributes->next;
     }
-  if (start->element.child != NULL && start->element.name != NULL) {
-    printf("\n%s>", indentation);
-  } else if (start->element.name != NULL) {
-    printf(">");
+  if (start->element.child != NULL) {
+    printf("\n%s", indentation);
   }
+  printf(">");
   int closed = 0;
   if (start->element.child != NULL) {
     DEBUG_PRINT("start->child != NULL", 0);
@@ -1111,7 +1114,7 @@ void print_tree(struct xml_item* start, int level, int count) {
 		count);
     print_tree(start->next, level, count+1);
   }
-  if (!closed && start->element.name != NULL) {
+  if (!closed) {
     printf("</");
     print_unicode(start->element.name);
     printf("\n%s>", indentation);
