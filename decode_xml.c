@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <wchar.h>
 #include <limits.h>
 #include <globals.h>
 #include <string.h>
@@ -249,12 +250,13 @@ void print_unicode(CONST unicode_char* buffer) {
   unicode_char_length index = 0;
   DEBUG_PRINT("print_unicode: %ld\n", (unsigned long) &buffer);
   while (buffer[index] != UNICODE_NULL) {
-    printf("%c", (char) buffer[index]);
+    putwchar((wchar_t) buffer[index]);
+    /* PRINT("%c", (char) buffer[index]); */
     index++;
   }
   fflush(NULL); /* FIXME, remove, for gdb print */
 #ifdef DEBUG
-  printf("  ");
+  PRINT("  ");
   index = 0;
   while (buffer[index] != UNICODE_NULL) {
     DEBUG_PRINT("%ld,", (unsigned long) buffer[index]);
@@ -980,9 +982,9 @@ static unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
 						attribute_value_length,
 						&new->attribute.content);
 #ifdef DEBUG
-	  printf("Sliced: ");
+	  PRINT("Sliced: ");
 	  print_unicode(new->attribute.content);
-	  printf("\n");
+	  PRINT("\n");
 #endif
 	  DEBUG_PRINT("Worked with attribute, %ld, %i\n", offset,
 		 attribute_value_length);
@@ -1019,9 +1021,9 @@ static unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
 
 void print_tree_header(struct xml_item* start, int level, int standalone) {
   if (standalone) {
-    printf("<?xml version='1.0' encoding='UTF32-LE' standalone='yes'?>\n");
+    PRINT("<?xml version='1.0' encoding='UTF32-LE' standalone='yes'?>\n");
   } else {
-    printf("<?xml version='1.0' encoding='UTF32-LE' standalone='no'?>\n");
+    PRINT("<?xml version='1.0' encoding='UTF32-LE' standalone='no'?>\n");
   }
   print_tree(start->element.child, level, 0);
 }
@@ -1031,14 +1033,14 @@ void print_tree(struct xml_item* start, int level, int count) {
   char *indentation = calloc(level+1, sizeof(char));
   struct xml_item *attributes = start->element.attributes;
   memset(indentation,ASCII_TAB,level);
-  setlocale(LC_ALL, "");
+  /*  setlocale(LC_ALL, ""); */
   indentation[level] = ASCII_NULL;
 #ifdef DEBUG
   if (start->type < 3 && (start->parent != NULL)) {
     FAIL("Type of xml_item < 3: %i", start->type);
   }
 #endif
-  printf("<");
+  PRINT("<");
 #ifdef DEBUG
   if (start == start->next) {
     FAIL("Circular pointers start->next, %i", __LINE__);
@@ -1052,25 +1054,25 @@ void print_tree(struct xml_item* start, int level, int count) {
   /* FIXME, indentation that preserves whitespace */
   /* FIXME, smarter handling of quotes */
   while (attributes) {
-    printf(" ");
+    PRINT(" ");
     print_unicode(attributes->attribute.name);
-    printf("=");
+    PRINT("=");
     if (!has_double_quotes(attributes->attribute.content)) {
-      printf("\"");
+      PRINT("\"");
       print_unicode(attributes->attribute.content);
-      printf("\"");
+      PRINT("\"");
     } else if (!has_single_quotes(attributes->attribute.content)) {
-      printf("'");
+      PRINT("'");
       print_unicode(attributes->attribute.content);
-      printf("'");
+      PRINT("'");
     } else {
       unicode_char write_buffer[WRITE_AMOUNT];
       unicode_char_length read_index = 0;
       unicode_char_length write_index = 0;
       unicode_char character = UNICODE_NULL;
       memset(write_buffer, UNICODE_NULL, WRITE_AMOUNT);
-      printf("\"");
-      printf("-FIXME, escape quotes-");
+      PRINT("\"");
+      PRINT("-FIXME, escape quotes-");
       do {
 	character = attributes->attribute.content[read_index++];
 	if ((write_index + 5 >= WRITE_AMOUNT)) {
@@ -1093,31 +1095,31 @@ void print_tree(struct xml_item* start, int level, int count) {
 	    write_buffer[write_index++] = (unicode_char) ";";
 	}
       } while (write_buffer[0] != UNICODE_NULL);
-      printf("\"");
+      PRINT("\"");
       }
     attributes = attributes->next;
     }
   if (start->element.child != NULL) {
-    printf("\n%s", indentation);
+    PRINT("\n%s", indentation);
   }
-  printf(">");
+  PRINT(">");
   if (start->element.child != NULL) {
     DEBUG_PRINT("start->child != NULL", 0);
     print_tree(start->element.child, level+1, count+1);
   }
   if (start->next != NULL) {
-    printf("</");
+    PRINT("</");
     print_unicode(start->element.name);
-    printf("\n%s>", indentation);
+    PRINT("\n%s>", indentation);
     closed = 1;
     DEBUG_PRINT("print_tree, %i, %ld, %i\n", level, (unsigned long) &start,
 		count);
     print_tree(start->next, level, count+1);
   }
   if (!closed) {
-    printf("</");
+    PRINT("</");
     print_unicode(start->element.name);
-    printf("\n%s>", indentation);
+    PRINT("\n%s>", indentation);
   }
 }
 
@@ -1151,21 +1153,21 @@ struct xml_item* parse_file(FILE *file) {
   index = 0;
   element_stack = create_xml_stack();
 #ifdef DEBUG
-  printf("Characters: %ld\n", characters);
-  printf("Allocated: %ld\n", sizeof(unicode_char) * (file_size/4));
+  PRINT("Characters: %ld\n", characters);
+  PRINT("Allocated: %ld\n", sizeof(unicode_char) * (file_size/4));
 #endif
   if (!valid_unicode) {
     return NULL;
   }
 #ifdef DEBUG
-  printf("Read %ld characters\n", characters);
+  PRINT("Read %ld characters\n", characters);
 #endif
   for (; index < characters; index++) {
     character = read_unicode_character(buffer, index);
     /*
-    printf("Buffer address: %ld\n", (unsigned long) &buffer);
-    printf("\nLoop index %ld", index);
-    printf("\nCharacter: %ld\n", (unsigned long) character);
+    PRINT("Buffer address: %ld\n", (unsigned long) &buffer);
+    PRINT("\nLoop index %ld", index);
+    PRINT("\nCharacter: %ld\n", (unsigned long) character);
     */
     if (character == UNICODE_NULL) {
       /* Stream ended before it was expected, FIXME */
@@ -1286,7 +1288,7 @@ struct xml_item* parse_file(FILE *file) {
       }
     }
   }
-  printf("\n");
+  PRINT("\n");
   free(buffer); buffer = NULL;
   return root;
 }

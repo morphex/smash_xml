@@ -42,7 +42,7 @@ int main() {
   buffer[read] = UNICODE_NULL;
   if (test_basics) {
 #ifdef DEBUG
-    printf("test_basics\n");
+    PRINT("test_basics\n");
 #endif
     if (!valid_unicode) {
       HANDLE_ERROR("Invalid Unicode stream, read %ld bytes", read);
@@ -62,7 +62,7 @@ int main() {
     unicode_char quote;
     unsigned long result3;
 #ifdef DEBUG
-    printf("test_attribute\n");
+    PRINT("test_attribute\n");
 #endif
     quote = read_unicode_character(buffer, offset+29);
     result3 = run_attribute_value(buffer, offset+30, quote);
@@ -100,7 +100,7 @@ int main() {
   if (test_miscellaneous) {
     unicode_char* attribute_value = NULL;
 #ifdef DEBUG
-    printf("test_miscellaneous\n");
+    PRINT("test_miscellaneous\n");
 #endif
     unicode_char equal_sign = read_unicode_character(buffer, offset+28);
     if (equal_sign != EQUAL_CHARACTER) {
@@ -117,7 +117,7 @@ int main() {
     source_buffer_index attribute_stop = 0;
     unicode_char attribute_start = read_unicode_character(buffer, offset+361);
 #ifdef DEBUG
-    printf("test_attribute\n");
+    PRINT("test_attribute\n");
 #endif
     if (attribute_start != SINGLE_QUOTE) {
       HANDLE_ERROR("Expected single quote at position 361, got %ld",
@@ -135,7 +135,7 @@ int main() {
     unicode_char compare_to[]= {0x3f,0x78,0x6d,0x6c,0x3c,UNICODE_NULL};
     unicode_char compare_to2[] = {0x3c,0x3f,0x78,0x6d,0x6c,UNICODE_NULL};
 #ifdef DEBUG
-    printf("test_compare\n");
+    PRINT("test_compare\n");
 #endif
     a_with_ring = read_unicode_character(buffer, offset+76);
     compare_result = compare_unicode_character(buffer,
@@ -177,7 +177,7 @@ int main() {
   /* Search test */
   if (test_search) {
 #ifdef DEBUG
-    printf("test_search\n");
+    PRINT("test_search\n");
 #endif
     unicode_char compare_to3[] = {0x2d,0x2d,0x3e,UNICODE_NULL};
     /* print_unicode(compare_to3); */
@@ -194,7 +194,7 @@ int main() {
     unicode_char *attribute = NULL;
     unicode_char_length end = 0;
 #ifdef DEBUG
-    printf("test_slice_and_length\n");
+    PRINT("test_slice_and_length\n");
 #endif
     source_buffer_index length = get_length_unicode(buffer);
     if (length != 872) {
@@ -216,13 +216,13 @@ int main() {
   }
   if (test_parse_file) {
 #ifdef DEBUG
-    printf("test_parse_file\n");
+    PRINT("test_parse_file\n");
 #endif
     FILE* file = fopen("test.xml", "rb+");
     struct xml_item *result = parse_file(file);
     fflush(NULL);
     print_tree_header(result, 0, 1);
-    printf("\n");
+    PRINT("\n");
     fflush(NULL);
   }
   /* Various parsing tools */
@@ -238,7 +238,7 @@ int main() {
     char compare_to[] = "root\0";
     small_int result;
 #ifdef DEBUG
-    printf("test_\n");
+    PRINT("test_\n");
 #endif
     if (!is_exclamation_mark_char(EXCLAMATION_MARK)) {
       HANDLE_ERROR("Couldn't identify exclamation mark", 0);
@@ -306,10 +306,10 @@ int main() {
     }
   }
   {
-    printf("sizeof(int): %u\n", sizeof(int));
-    printf("sizeof(short): %u\n", sizeof(short));
-    printf("sizeof(unicode_char): %u\n", sizeof(unicode_char));
-    printf("sizeof(long): %u\n", sizeof(long));
+    PRINT("sizeof(int): %u\n", sizeof(int));
+    PRINT("sizeof(short): %u\n", sizeof(short));
+    PRINT("sizeof(unicode_char): %u\n", sizeof(unicode_char));
+    PRINT("sizeof(long): %u\n", sizeof(long));
   }
   exit(0);
 }

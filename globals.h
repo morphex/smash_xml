@@ -197,3 +197,5 @@ struct parser {
 #else
 #define DEBUG_PRINT(message, ...) ((void)0)
 #endif
+
+#define PRINT(...) printf(__VA_ARGS__)
