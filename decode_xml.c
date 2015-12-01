@@ -696,6 +696,24 @@ static small_int is_name_character(CONST unicode_char* buffer,
   return 0;
 }
 
+static unicode_char* convert_char_array_to_unicode_char_array(char *source) {
+  unicode_char* destination = malloc(WRITE_AMOUNT);
+  source_buffer_index index = 0;
+  while (source[index] != NULL) {
+    if (!(index % (WRITE_AMOUNT/UNICODE_STORAGE_BYTES))) {
+      memset(&destination[index], UNICODE_NULL, WRITE_AMOUNT);
+    }
+    destination[index] = (unicode_char) source[index];
+    if (!(index+1 % (WRITE_AMOUNT/UNICODE_STORAGE_BYTES))) {
+      realloc(destination, (index * UNICODE_STORAGE_BYTES) + WRITE_AMOUNT);
+    }
+    index++;
+  }
+  destination[index] = UNICODE_NULL;
+  realloc(destination, (index+1)*UNICODE_STORAGE_BYTES);
+  return destination;
+}
+
 static unicode_char convert_char_to_unicode_char(char character) {
   return (unicode_char) character;
 }
@@ -715,7 +733,7 @@ small_int compare_unicode_array_char_array(unicode_char *unicode,
   small_int result = 0;
   source_buffer_index index = 0;
   if (number_of_characters >= UNICODE_CHAR_MAX) {
-    /* FIXME, deal with this and stringth lengths */
+    /* FIXME, deal with this and string lengths */
     return 0;
   }
   for (; index < number_of_characters; index++) {

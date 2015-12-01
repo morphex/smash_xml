@@ -305,6 +305,10 @@ int main() {
       HANDLE_ERROR("Expected result 0 on test line %i", __LINE__);
     }
   }
+  if (1) {
+    unicode_char *tester = convert_char_array_to_unicode_char_array("abc");
+    print_unicode(tester);
+  }
   {
     PRINT("sizeof(int): %u\n", sizeof(int));
     PRINT("sizeof(short): %u\n", sizeof(short));
