@@ -256,7 +256,7 @@ void print_unicode(CONST unicode_char* buffer) {
   }
   fflush(NULL); /* FIXME, remove, for gdb print */
 #ifdef DEBUG
-  PRINT("  ");
+  DEBUG_PRINT("  ");
   index = 0;
   while (buffer[index] != UNICODE_NULL) {
     DEBUG_PRINT("%ld,", (unsigned long) buffer[index]);
@@ -714,6 +714,11 @@ static unicode_char* convert_char_array_to_unicode_char_array(char *source) {
   return destination;
 }
 
+static unsigned char* convert_unicode_char_array_to_utf_8_char_array\
+                        (unicode_char *source) {
+  return NULL;
+}
+
 static unicode_char convert_char_to_unicode_char(char character) {
   return (unicode_char) character;
 }
@@ -1000,9 +1005,9 @@ static unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
 						attribute_value_length,
 						&new->attribute.content);
 #ifdef DEBUG
-	  PRINT("Sliced: ");
+	  DEBUG_PRINT("Sliced: ");
 	  print_unicode(new->attribute.content);
-	  PRINT("\n");
+	  DEBUG_PRINT("\n");
 #endif
 	  DEBUG_PRINT("Worked with attribute, %ld, %i\n", offset,
 		 attribute_value_length);
@@ -1171,22 +1176,17 @@ struct xml_item* parse_file(FILE *file) {
   index = 0;
   element_stack = create_xml_stack();
 #ifdef DEBUG
-  PRINT("Characters: %ld\n", characters);
-  PRINT("Allocated: %ld\n", sizeof(unicode_char) * (file_size/4));
+  DEBUG_PRINT("Characters: %ld\n", characters);
+  DEBUG_PRINT("Allocated: %ld\n", sizeof(unicode_char) * (file_size/4));
 #endif
   if (!valid_unicode) {
     return NULL;
   }
 #ifdef DEBUG
-  PRINT("Read %ld characters\n", characters);
+  DEBUG_PRINT("Read %ld characters\n", characters);
 #endif
   for (; index < characters; index++) {
     character = read_unicode_character(buffer, index);
-    /*
-    PRINT("Buffer address: %ld\n", (unsigned long) &buffer);
-    PRINT("\nLoop index %ld", index);
-    PRINT("\nCharacter: %ld\n", (unsigned long) character);
-    */
     if (character == UNICODE_NULL) {
       /* Stream ended before it was expected, FIXME */
 #ifdef DEBUG
