@@ -263,14 +263,16 @@ void print_unicode(CONST unicode_char* buffer) {
     if (buffer[index] >= 0x800) {
       output[2] = (character | byte_mark) & byte_mask;
       character >>= 6;
-      if (!first_byte)
+      if (!first_byte) {
 	first_byte = (unsigned char) 0xE0;
+      }
     }
     if (buffer[index] >= 0x80) {
       output[1] = (character | byte_mark) & byte_mask;
       character >>= 6;
-      if (!first_byte)
+      if (!first_byte) {
 	first_byte = (unsigned char) 0xC0;
+      }
     }
     output[0] = character | first_byte;
     /*
