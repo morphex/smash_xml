@@ -279,7 +279,7 @@ void print_unicode(CONST unicode_char* buffer) {
     printf("pu: %u,%u,%u,%u", output[0], output[1], output[2], output[3]);
     */
     printf(output);
-    memset(output, 4, sizeof(char));
+    memset(output, NULL, 4 * sizeof(char));
     index++;
   }
   fflush(NULL); /* FIXME, remove, for gdb print */
