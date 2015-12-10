@@ -226,7 +226,7 @@ int main() {
     fflush(NULL);
   }
   /* Various parsing tools */
-  if (1) {
+  if (test_miscellaneous) {
     unicode_char cdata[7] = {0,0,0,0,0,0,0};
     unicode_char comment[3] = {0,0,0};
     unicode_char comment_end[10] = {0,0,0,0,0,0,0,0,0,0};
@@ -305,9 +305,14 @@ int main() {
       HANDLE_ERROR("Expected result 0 on test line %i", __LINE__);
     }
   }
-  if (1) {
+  if (0) {
     unicode_char *tester = convert_char_array_to_unicode_char_array("abc");
     print_unicode(tester);
+  }
+  if (1) {
+    unicode_char test[2] = {UNICODE_NULL, UNICODE_NULL};
+    test[0] = read_unicode_character(buffer, offset+76);
+    print_unicode(test);
   }
   {
     PRINT("sizeof(int): %u\n", sizeof(int));

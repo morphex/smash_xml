@@ -201,4 +201,7 @@ struct parser {
 #define DEBUG_PRINT(message, ...) ((void)0)
 #endif
 
+/* Convenience macro to replace printf with something that can
+   output with the correct character type for the terminal.
+*/
 #define PRINT(...) printf(__VA_ARGS__)

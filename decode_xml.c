@@ -244,14 +244,40 @@ unicode_char *escape_double_quotes(unicode_char* source) {
 }
 
 /*
-  Prints unicode_char array.
+  Prints unicode_char array, currently outputs UTF-8.
 */
 void print_unicode(CONST unicode_char* buffer) {
+  const unicode_char byte_mask = 0xBF;
+  const unicode_char byte_mark = 0x80;
   unicode_char_length index = 0;
+  unsigned char output[5] = {0,0,0,0,0};
   DEBUG_PRINT("print_unicode: %ld\n", (unsigned long) &buffer);
   while (buffer[index] != UNICODE_NULL) {
-    putwchar((wchar_t) buffer[index]);
-    /* PRINT("%c", (char) buffer[index]); */
+    unsigned char first_byte = (unsigned char) 0x00;
+    unicode_char character = buffer[index];
+    if (buffer[index] >= 0x10000) {
+      output[3] = (buffer[index] | byte_mark) & byte_mask;
+      character >>= 6;
+      first_byte = (unsigned char) 0xF0;
+    }
+    if (buffer[index] >= 0x800) {
+      output[2] = (character | byte_mark) & byte_mask;
+      character >>= 6;
+      if (!first_byte)
+	first_byte = (unsigned char) 0xE0;
+    }
+    if (buffer[index] >= 0x80) {
+      output[1] = (character | byte_mark) & byte_mask;
+      character >>= 6;
+      if (!first_byte)
+	first_byte = (unsigned char) 0xC0;
+    }
+    output[0] = character | first_byte;
+    /*
+    printf("pu: %u,%u,%u,%u", output[0], output[1], output[2], output[3]);
+    */
+    printf(output);
+    memset(output, 4, sizeof(char));
     index++;
   }
   fflush(NULL); /* FIXME, remove, for gdb print */
