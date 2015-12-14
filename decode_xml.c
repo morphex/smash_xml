@@ -187,6 +187,21 @@ static unicode_char_length find_element_endtag(CONST unicode_char* buffer,
   return 0;
 }
 
+static unicode_char_length find_element_starttag(CONST unicode_char* buffer,
+						 unicode_char_length offset) {
+  unicode_char character = UNICODE_NULL;
+  do {
+    character = read_unicode_character(buffer, offset);
+    if (character == ELEMENT_STARTTAG) {
+	return offset;
+    }
+    offset++;
+  } while (character != UNICODE_NULL);
+  /* Not finding a starttag at the end of a document is OK */
+  /* FAIL("Reached end of find_element_starttag, %ld", offset); */
+  return 0;
+}
+
 static unicode_char_length find_processing_instruction_end\
  (CONST unicode_char* buffer, unicode_char_length offset) {
   unicode_char character = UNICODE_NULL;
@@ -1082,7 +1097,10 @@ void print_tree_header(struct xml_item* start, int level, int standalone) {
 void print_tree(struct xml_item* start, int level, int count) {
   int closed = 0;
   char *indentation = calloc(level+1, sizeof(char));
-  struct xml_item *attributes = start->element.attributes;
+  struct xml_item *attributes = NULL;
+  if (start->type == 3) {
+    attributes = start->element.attributes;
+  }
   memset(indentation,ASCII_TAB,level);
   /*  setlocale(LC_ALL, ""); */
   indentation[level] = ASCII_NULL;
@@ -1091,7 +1109,6 @@ void print_tree(struct xml_item* start, int level, int count) {
     FAIL("Type of xml_item < 3: %i", start->type);
   }
 #endif
-  PRINT("<");
 #ifdef DEBUG
   if (start == start->next) {
     FAIL("Circular pointers start->next, %i", __LINE__);
@@ -1100,7 +1117,8 @@ void print_tree(struct xml_item* start, int level, int count) {
     FAIL("Circular pointers start->child, %i", __LINE__);
   }
 #endif
-  
+
+  PRINT("<");
   print_unicode(start->element.name);
   /* FIXME, indentation that preserves whitespace */
   /* FIXME, smarter handling of quotes */
@@ -1158,14 +1176,29 @@ void print_tree(struct xml_item* start, int level, int count) {
     DEBUG_PRINT("start->child != NULL", 0);
     print_tree(start->element.child, level+1, count+1);
   }
+  if (start->next != NULL && start->next->type == 4) {
+    PRINT("Characters: ");
+    print_unicode(start->next->text.characters);
+  }
   if (start->next != NULL) {
-    PRINT("</");
-    print_unicode(start->element.name);
-    PRINT("\n%s>", indentation);
-    closed = 1;
-    DEBUG_PRINT("print_tree, %i, %ld, %i\n", level, (unsigned long) &start,
-		count);
-    print_tree(start->next, level, count+1);
+    struct xml_item *next = NULL;
+    if (start->next->type == 3) {
+      next = start->next;
+    } else if (start->next->next != NULL && start->next->next->type == 3) {
+      /* A text element can only be followed by xml_item->element */
+      next = start->next->next;
+    } else {
+      /* FAIL("Unknown type in print tree %u", start->next->type); */
+    }
+    if (next) {
+      PRINT("</");
+      print_unicode(start->element.name);
+      PRINT("\n%s>", indentation);
+      closed = 1;
+      DEBUG_PRINT("print_tree, %i, %ld, %i\n", level, (unsigned long) &start,
+		  count);
+      print_tree(next, level, count+1);
+    }
   }
   if (!closed) {
     PRINT("</");
@@ -1213,7 +1246,7 @@ struct xml_item* parse_file(FILE *file) {
 #ifdef DEBUG
   DEBUG_PRINT("Read %ld characters\n", characters);
 #endif
-  for (; index < characters; index++) {
+  for (; index < characters; ) {
     character = read_unicode_character(buffer, index);
     if (character == UNICODE_NULL) {
       /* Stream ended before it was expected, FIXME */
@@ -1264,7 +1297,8 @@ struct xml_item* parse_file(FILE *file) {
 	  FAIL("End tag without start tag found at %ld", index);
 	}
 	DEBUG_PRINT("\nEnd of element section\n", 0);
-	index = end;
+	index = end+1;
+	continue;
 	DEBUG_PRINT("End of element endtag: %ld\n", index);
       } else if (is_name_start_character_char(look_ahead)) {
 	/* Regular element section */
@@ -1292,10 +1326,9 @@ struct xml_item* parse_file(FILE *file) {
 	      previous->element.child = new;
 	    }
 	  } else if (previous->type == 4) {
-	    FAIL("Not supposed to handle type 4 yet", 0);
-	    new->parent = previous->parent;
-	    new->previous = previous;
 	    previous->next = new;
+	    new->previous = previous;
+	    new->parent = previous->parent;
 	  } else {
 	    FAIL("Unexpected input for xml?->type: %i", previous->type);
 	  }
@@ -1307,7 +1340,7 @@ struct xml_item* parse_file(FILE *file) {
 	if (!empty_element) {
 	  element_stack = push_xml_stack(element_stack, current);
 	}
-	index = element_end;
+	index = element_end+1;
 	DEBUG_PRINT("\nYay, regular, %ld", index);
       } else if (is_exclamation_mark_char(look_ahead)) {
 	DEBUG_PRINT("\nExclamation mark!", 0);
@@ -1325,13 +1358,46 @@ struct xml_item* parse_file(FILE *file) {
 	}
       } else if (is_question_mark_char(look_ahead)) {
 	DEBUG_PRINT("\nIs question mark",0);
-	index = find_processing_instruction_end(buffer, index+2);
+	index = find_processing_instruction_end(buffer, index+2)+1;
 	DEBUG_PRINT("\nProcessing instruction ended at %ld\n", index);
       } else {
 	DEBUG_PRINT("The end\n", 0);
 	FAIL("\nError, could not handle character %ux at %ux",
 	       look_ahead, index);
       }
+    } else {
+      if (previous == NULL && is_whitespace(buffer, index)) {
+	/* Whitespace after XML declaration, FIXME when
+	 XML declaration is actually parsed */
+	index++;
+	continue;
+      }
+      unicode_char *characters = NULL;
+      unicode_char_length end = find_element_starttag(buffer, index);
+      DEBUG_PRINT("Finding end %u: ", end);
+      DEBUG_PRINT("previous->parent->parent %u\n",
+		  (unsigned long) previous->parent->parent);
+      if (end == 0 && element_stack->previous == NULL) {
+	/* After the last ending tag */
+	if (is_whitespace(buffer, index)) {
+	  index++;
+	  printf("Whitespace after last element\n");
+	  continue;
+	}
+      }
+      slice_string(buffer, index, end, &characters);
+      PRINT("Found characters: ");
+      print_unicode(characters);
+      PRINT("\n");
+      /* Character data, element content */
+      current = create_xml_text();
+      previous->next = current;
+      current->previous = previous;
+      /* printf("c%c", (char) character); */
+      current->text.characters = characters;
+      current->type = 4;
+      index = end;
+      previous = current;
     }
   }
   PRINT("\n");

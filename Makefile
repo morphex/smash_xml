@@ -1,5 +1,6 @@
 CC = gcc
 COMPILER_OPTIONS = -std=iso9899:1990 -pedantic -fms-extensions decode_xml.c -g -o decode_xml -I. -Wall -Wuninitialized
+COMPILER_OPTIONS_ASSEMBLER = -std=iso9899:1990 -pedantic -fms-extensions decode_xml.c -g -S -Wa,-ahl=test.s -I. -Wall -Wuninitialized -fverbose-asm
 #CC = tcc
 #COMPILER_OPTIONS = -o decode_xml -I. decode_xml.c
 
@@ -7,6 +8,10 @@ all:
 	$(CC) makeheaders.c -o makeheaders
 	./makeheaders decode_xml.c
 	$(CC) $(COMPILER_OPTIONS)
+assembler:
+	$(CC) makeheaders.c -o makeheaders
+	./makeheaders decode_xml.c
+	$(CC) $(COMPILER_OPTIONS_ASSEMBLER)
 alltest:
 	$(CC) makeheaders.c -o makeheaders
 	./makeheaders decode_xml.c
