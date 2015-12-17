@@ -14,7 +14,7 @@ void HANDLE_ERROR(char *message, ...) {
 int main() {
   unsigned int test_basics, test_attribute,
     test_miscellaneous, test_compare, test_search, test_slice_and_length, rat,
-    test_parse_file;
+    test_parse_file, test_printer;
   unicode_char *buffer;
   source_buffer_index read;
   small_int valid_unicode;
@@ -24,7 +24,8 @@ int main() {
   test_basics = rat; test_attribute = rat;
   test_miscellaneous = rat; test_compare = rat; test_search = rat;
   test_slice_and_length = rat;
-  test_parse_file = rat;
+  test_parse_file = 0; /* FIXME */
+  test_printer = rat;
   buffer = NULL;
   read = 0;
   valid_unicode = 0;
@@ -309,10 +310,31 @@ int main() {
     unicode_char *tester = convert_char_array_to_unicode_char_array("abc");
     print_unicode(tester);
   }
-  if (1) {
+  if (0) {
     unicode_char test[2] = {UNICODE_NULL, UNICODE_NULL};
     test[0] = read_unicode_character(buffer, offset+76);
     print_unicode(test);
+  }
+  if (test_printer) {
+    unicode_char* name = NULL;
+    unicode_char* text = NULL;
+    struct xml_item* root = NULL;
+    root = create_xml_element();
+    root->element.name = convert_char_array_to_unicode_char_array("root");
+    root->type = 3;
+    root->element.child = create_xml_element();
+    name = convert_char_array_to_unicode_char_array("first");
+    root->element.child->element.name = name;
+    root->element.child->type = 3;
+    root->element.child->next = create_xml_element();
+    name = convert_char_array_to_unicode_char_array("second");
+    root->element.child->next->element.name = name;
+    root->element.child->next->type = 3;
+    root->element.child->next->element.child = create_xml_text();
+    text = convert_char_array_to_unicode_char_array("a text");
+    root->element.child->next->element.child->text.characters = text;
+    root->element.child->next->element.child->type = 4;
+    print_tree(root, 0, 0);
   }
   {
     PRINT("sizeof(int): %u\n", sizeof(int));

@@ -1118,42 +1118,43 @@ void print_tree(struct xml_item* start, int level, int count) {
   }
 #endif
 
-  PRINT("<");
-  print_unicode(start->element.name);
-  /* FIXME, indentation that preserves whitespace */
-  /* FIXME, smarter handling of quotes */
-  while (attributes) {
-    PRINT(" ");
-    print_unicode(attributes->attribute.name);
-    PRINT("=");
-    if (!has_double_quotes(attributes->attribute.content)) {
-      PRINT("\"");
-      print_unicode(attributes->attribute.content);
-      PRINT("\"");
-    } else if (!has_single_quotes(attributes->attribute.content)) {
-      PRINT("'");
-      print_unicode(attributes->attribute.content);
-      PRINT("'");
-    } else {
-      unicode_char write_buffer[WRITE_AMOUNT];
-      unicode_char_length read_index = 0;
-      unicode_char_length write_index = 0;
-      unicode_char character = UNICODE_NULL;
-      memset(write_buffer, UNICODE_NULL, WRITE_AMOUNT);
-      PRINT("\"");
-      PRINT("-FIXME, escape quotes-");
-      do {
-	character = attributes->attribute.content[read_index++];
-	if ((write_index + 5 >= WRITE_AMOUNT)) {
+  if (start->type == 3) {
+    PRINT("<");
+    print_unicode(start->element.name);
+    /* FIXME, indentation that preserves whitespace */
+    /* FIXME, smarter handling of quotes */
+    while (attributes) {
+      PRINT(" ");
+      print_unicode(attributes->attribute.name);
+      PRINT("=");
+      if (!has_double_quotes(attributes->attribute.content)) {
+	PRINT("\"");
+	print_unicode(attributes->attribute.content);
+	PRINT("\"");
+      } else if (!has_single_quotes(attributes->attribute.content)) {
+	PRINT("'");
+	print_unicode(attributes->attribute.content);
+	PRINT("'");
+      } else {
+	unicode_char write_buffer[WRITE_AMOUNT];
+	unicode_char_length read_index = 0;
+	unicode_char_length write_index = 0;
+	unicode_char character = UNICODE_NULL;
+	memset(write_buffer, UNICODE_NULL, WRITE_AMOUNT);
+	PRINT("\"");
+	PRINT("-FIXME, escape quotes-");
+	do {
+	  character = attributes->attribute.content[read_index++];
+	  if ((write_index + 5 >= WRITE_AMOUNT)) {
 	    write_buffer[write_index] = UNICODE_NULL;
 	    print_unicode(write_buffer);
 	    memset(write_buffer, UNICODE_NULL, WRITE_AMOUNT);
 	    write_index = 0;
-	}
-	if (character == UNICODE_NULL) {
-	  memset(&write_buffer[write_index], UNICODE_NULL,
-		 WRITE_AMOUNT-write_index);
-        } else if (character != DOUBLE_QUOTE) {
+	  }
+	  if (character == UNICODE_NULL) {
+	    memset(&write_buffer[write_index], UNICODE_NULL,
+		   WRITE_AMOUNT-write_index);
+	  } else if (character != DOUBLE_QUOTE) {
 	    write_buffer[write_index++] = character;
 	  } else if (character == DOUBLE_QUOTE) {
 	    write_buffer[write_index++] = AMPERSAND;
@@ -1162,48 +1163,44 @@ void print_tree(struct xml_item* start, int level, int count) {
 	    write_buffer[write_index++] = (unicode_char) "o";
 	    write_buffer[write_index++] = (unicode_char) "t";
 	    write_buffer[write_index++] = (unicode_char) ";";
-	}
-      } while (write_buffer[0] != UNICODE_NULL);
-      PRINT("\"");
+	  }
+	} while (write_buffer[0] != UNICODE_NULL);
+	PRINT("\"");
       }
-    attributes = attributes->next;
+      attributes = attributes->next;
     }
-  if (start->element.child != NULL) {
-    PRINT("\n%s", indentation);
-  }
-  PRINT(">");
-  if (start->element.child != NULL) {
-    DEBUG_PRINT("start->child != NULL", 0);
-    print_tree(start->element.child, level+1, count+1);
-  }
-  if (start->next != NULL && start->next->type == 4) {
-    PRINT("Characters: ");
-    print_unicode(start->next->text.characters);
-  }
-  if (start->next != NULL) {
-    struct xml_item *next = NULL;
-    if (start->next->type == 3) {
-      next = start->next;
-    } else if (start->next->next != NULL && start->next->next->type == 3) {
-      /* A text element can only be followed by xml_item->element */
-      next = start->next->next;
-    } else {
-      /* FAIL("Unknown type in print tree %u", start->next->type); */
+    if (start->element.child != NULL) {
+      PRINT("\n%s", indentation);
     }
-    if (next) {
+    PRINT(">");
+    if (start->element.child != NULL) {
+      DEBUG_PRINT("start->child != NULL", 0);
+      print_tree(start->element.child, level+1, count+1);
+    }
+    if (start->next != NULL) {
       PRINT("</");
       print_unicode(start->element.name);
       PRINT("\n%s>", indentation);
       closed = 1;
       DEBUG_PRINT("print_tree, %i, %ld, %i\n", level, (unsigned long) &start,
 		  count);
-      print_tree(next, level, count+1);
+      print_tree(start->next, level, count+1);
     }
-  }
-  if (!closed) {
-    PRINT("</");
-    print_unicode(start->element.name);
-    PRINT("\n%s>", indentation);
+    if (!closed) {
+      PRINT("</");
+      print_unicode(start->element.name);
+      PRINT("\n%s>", indentation);
+    }
+  } else if (start->type == 4) {
+    PRINT("Characters: ");
+    print_unicode(start->text.characters);
+    if (start->next) {
+      if (start->next->type == 3) {
+	print_tree(start->next, level, count+1);
+      } else {
+	FAIL("Can't have non-element after XML text");
+      }
+    }
   }
 }
 
@@ -1372,6 +1369,12 @@ struct xml_item* parse_file(FILE *file) {
 	index++;
 	continue;
       }
+#ifdef TEST
+      if (previous->type == 4) {
+	/*	FAIL("Previous type 4, position %u", index); */
+	previous = current->previous;
+      }
+#endif
       unicode_char *characters = NULL;
       unicode_char_length end = find_element_starttag(buffer, index);
       DEBUG_PRINT("Finding end %u: ", end);
