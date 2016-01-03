@@ -128,7 +128,7 @@ static small_int is_slash(CONST unicode_char character) {
 
 static small_int is_cdata_start(CONST unicode_char* buffer,
 				unicode_char_length offset) {
-  return read_unicode_character(buffer, offset) == 0x43 &&
+  return read_unicode_character(buffer, offset+0) == 0x5b &&
     read_unicode_character(buffer, offset+1) == 0x44 &&
     read_unicode_character(buffer, offset+2) == 0x41 &&
     read_unicode_character(buffer, offset+3) == 0x54 &&
@@ -219,7 +219,7 @@ static unicode_char_length find_processing_instruction_end\
 }
 
 static small_int is_comment_start(CONST unicode_char* buffer,
-					   unicode_char_length offset) {
+				  unicode_char_length offset) {
   DEBUG_PRINT("ics: %ld\n", read_unicode_character(buffer, offset));
   DEBUG_PRINT("ics: %ld\n", read_unicode_character(buffer, offset+1));
   return read_unicode_character(buffer, offset) == HYPHEN &&
@@ -767,6 +767,21 @@ static unicode_char convert_char_to_unicode_char(char character) {
 }
 
 /*
+  Convenience function to dump xml_stack
+*/
+static void dump_xml_stack(struct xml_stack *stack) {
+  struct xml_stack *current = stack;
+  PRINT("Dumping stack\n");
+  while (current) {
+    if (current->element) {
+      print_unicode(current->element->element.name);
+    }
+    current = current->previous;
+    PRINT("\n");
+  }
+}
+
+/*
   Convenience function for comparing unicode_char to a regular
   null-terminated char array.
 
@@ -1096,12 +1111,8 @@ void print_tree_header(struct xml_item* start, int level, int standalone) {
 
 void print_tree(struct xml_item* start, int level, int count) {
   int closed = 0;
-  char *indentation = calloc(level+1, sizeof(char));
-  struct xml_item *attributes = NULL;
-  if (start->type == 3) {
-    attributes = start->element.attributes;
-  }
-  memset(indentation,ASCII_TAB,level);
+  char *indentation = calloc(level+2, sizeof(char));
+  memset(indentation,ASCII_TAB,level+1);
   /*  setlocale(LC_ALL, ""); */
   indentation[level] = ASCII_NULL;
 #ifdef DEBUG
@@ -1118,8 +1129,10 @@ void print_tree(struct xml_item* start, int level, int count) {
   }
 #endif
 
-  if (start->type == 3) {
+  if (start->type == 3 &&
+      is_name_start_character_char(start->element.name[0])) {
     PRINT("<");
+    struct xml_item *attributes = start->element.attributes;
     print_unicode(start->element.name);
     /* FIXME, indentation that preserves whitespace */
     /* FIXME, smarter handling of quotes */
@@ -1170,9 +1183,8 @@ void print_tree(struct xml_item* start, int level, int count) {
       attributes = attributes->next;
     }
     if (start->element.child != NULL) {
-      PRINT("\n%s", indentation);
     }
-    PRINT(">");
+    PRINT("\n%s>", indentation);
     if (start->element.child != NULL) {
       DEBUG_PRINT("start->child != NULL", 0);
       print_tree(start->element.child, level+1, count+1);
@@ -1192,14 +1204,36 @@ void print_tree(struct xml_item* start, int level, int count) {
       PRINT("\n%s>", indentation);
     }
   } else if (start->type == 4) {
-    PRINT("Characters: ");
+    /* PRINT("Characters: "); */
     print_unicode(start->text.characters);
     if (start->next) {
+      /* FIXME, this test might not be necessary */
       if (start->next->type == 3) {
 	print_tree(start->next, level, count+1);
       } else {
 	FAIL("Can't have non-element after XML text");
       }
+    }
+  } else if (start->element.name[0] == EXCLAMATION_MARK) {
+    small_int is_cdata = 0;
+    small_int is_comment = 0;
+    if (is_cdata_start(start->element.name, 1)) {
+      PRINT("<![CDATA[");
+      is_cdata = 1;
+    } else if (is_comment_start(start->element.name, 1)) {
+      PRINT("<!--");
+      is_comment = 1;
+    } else {
+      PRINT("Unknown ! start tag: ");
+      print_unicode(start->element.name[1]);
+      FAIL("Error");
+    }
+    print_unicode(&start->element.name[1]);
+    print_unicode(start->element.child->text.characters);
+    if (is_cdata) {
+      PRINT("]]>");
+    } else if (is_comment) {
+      PRINT("-->");
     }
   }
 }
@@ -1342,13 +1376,46 @@ struct xml_item* parse_file(FILE *file) {
       } else if (is_exclamation_mark_char(look_ahead)) {
 	DEBUG_PRINT("\nExclamation mark!", 0);
 	if (is_cdata_start(buffer, index+2)) {
-	  DEBUG_PRINT("\nIs CDATA", 0);
-	  index = find_cdata_end(buffer, index+2+5);
+	  PRINT("\nIs CDATA", 0);
+	  unicode_char *cdata_data = NULL;
+	  struct xml_item *new = NULL;
+	  struct xml_item *cdata = NULL;
+	  unicode_char_length end = 0;
+	  new = create_xml_element();
+	  cdata = create_xml_text();
+	  end = find_cdata_end(buffer, index+6);
+	  slice_string(buffer, index+2, end-2, &cdata_data);
+	  new->element.name = \
+	    convert_char_array_to_unicode_char_array("![CDATA[");
+	  new->type = 3;
+	  new->element.child = cdata;
+	  new->element.child->parent = new;
+	  new->element.child->text.characters = cdata_data;
+	  previous->next = new;
+	  new->previous = previous;
+	  previous = current = new;
+	  index = end;
 	  DEBUG_PRINT("\nCDATA end was %ld\n", index);
 	} else if (is_comment_start(buffer, index+2)) {
-	  DEBUG_PRINT("\nIs comment", 0);
-	  index = find_comment_end(buffer, index+2);
-	  DEBUG_PRINT("\nComment end was %ld\n", index);
+	  unicode_char *comment_data = NULL;
+	  struct xml_item *new = NULL;
+	  struct xml_item *comment = NULL;
+	  unicode_char_length end = 0;
+	  new = create_xml_element();
+	  comment = create_xml_text();
+	  PRINT("\nIs comment", 0);
+	  end = find_comment_end(buffer, index+2);
+	  slice_string(buffer, index+2, end-2, &comment_data);
+	  new->element.name = convert_char_array_to_unicode_char_array("!--");
+	  new->type = 3;
+	  new->element.child = comment;
+	  new->element.child->parent = new;
+	  new->element.child->text.characters = comment_data;
+	  previous->next = new;
+	  new->previous = previous;
+	  previous = current = new;
+	  index = end;
+	  PRINT("\nComment end was %ld\n", index);
 	} else {
 	  /* Unknown (invalid) XML */
 	  FAIL("Invalid XML, exclamation mark, %ld\n", index);
@@ -1363,18 +1430,25 @@ struct xml_item* parse_file(FILE *file) {
 	       look_ahead, index);
       }
     } else {
+      /*
+      index++;
+      continue;
+      */
+      dump_xml_stack(element_stack);
+      if (previous) {
+	PRINT("Previous type: %u\n", previous->type);
+	if (previous->type == 3) {
+	  PRINT("Name: ");
+	  print_unicode(previous->element.name);
+	  PRINT("\n");
+	}
+      }
       if (previous == NULL && is_whitespace(buffer, index)) {
 	/* Whitespace after XML declaration, FIXME when
 	 XML declaration is actually parsed */
 	index++;
 	continue;
       }
-#ifdef TEST
-      if (previous->type == 4) {
-	/*	FAIL("Previous type 4, position %u", index); */
-	previous = current->previous;
-      }
-#endif
       unicode_char *characters = NULL;
       unicode_char_length end = find_element_starttag(buffer, index);
       DEBUG_PRINT("Finding end %u: ", end);
@@ -1394,8 +1468,13 @@ struct xml_item* parse_file(FILE *file) {
       PRINT("\n");
       /* Character data, element content */
       current = create_xml_text();
-      previous->next = current;
-      current->previous = previous;
+      if (previous->type == 4) {
+	previous->parent->next = current;
+	current->previous = previous->parent;
+      } else {
+	previous->element.child = current;
+	current->parent = previous;
+      }
       /* printf("c%c", (char) character); */
       current->text.characters = characters;
       current->type = 4;

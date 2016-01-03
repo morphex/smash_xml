@@ -9,6 +9,8 @@ void HANDLE_ERROR(char *message, ...) {
   va_list argument_pointer; va_start(argument_pointer, message);
   vprintf(message, argument_pointer);
   va_end(argument_pointer);
+  printf("\n");
+  exit(1);
 }
 
 int main() {
@@ -22,9 +24,9 @@ int main() {
   unicode_char_length offset;
   rat = 1; /* Run All Tests */
   test_basics = rat; test_attribute = rat;
-  test_miscellaneous = rat; test_compare = rat; test_search = rat;
+  test_miscellaneous = 1; test_compare = rat; test_search = rat;
   test_slice_and_length = rat;
-  test_parse_file = 0; /* FIXME */
+  test_parse_file = 0;
   test_printer = rat;
   buffer = NULL;
   read = 0;
@@ -198,8 +200,8 @@ int main() {
     PRINT("test_slice_and_length\n");
 #endif
     source_buffer_index length = get_length_unicode(buffer);
-    if (length != 872) {
-      HANDLE_ERROR("Expected length of 872, got %lu\n", length);
+    if (length != 873) {
+      HANDLE_ERROR("Expected length of 873, got %lu\n", length);
     }
     end = run_attribute_value(buffer, offset+362, SINGLE_QUOTE);
     if (end != 374) {
@@ -330,10 +332,14 @@ int main() {
     name = convert_char_array_to_unicode_char_array("second");
     root->element.child->next->element.name = name;
     root->element.child->next->type = 3;
-    root->element.child->next->element.child = create_xml_text();
+    root->element.child->next->element.child = create_xml_element();
+    name = convert_char_array_to_unicode_char_array("third");
+    root->element.child->next->element.child->element.name = name;
+    root->element.child->next->element.child->type = 3;
+    root->element.child->next->element.child->element.child = create_xml_text();
     text = convert_char_array_to_unicode_char_array("a text");
-    root->element.child->next->element.child->text.characters = text;
-    root->element.child->next->element.child->type = 4;
+    root->element.child->next->element.child->element.child->text.characters = text;
+    root->element.child->next->element.child->element.child->type = 4;
     print_tree(root, 0, 0);
   }
   {
