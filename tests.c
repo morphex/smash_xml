@@ -111,8 +111,9 @@ int main() {
     }
     slice_string(buffer, 561, 586, &attribute_value);
     attribute_value = reduce_entities(attribute_value, 0);
-    if (attribute_value[9] != DOUBLE_QUOTE) {
-      HANDLE_ERROR("Expected double quote at position 9");
+    if (attribute_value[10] != DOUBLE_QUOTE) {
+      print_unicode(attribute_value);
+      HANDLE_ERROR("Expected double quote at position 10, got %ld", attribute_value[10]);
     }
   }
   /* Attribute reading tests */
@@ -230,7 +231,7 @@ int main() {
   }
   /* Various parsing tools */
   if (test_miscellaneous) {
-    unicode_char cdata[7] = {0,0,0,0,0,0,0};
+    unicode_char cdata[8] = {0,0,0,0,0,0,0,0};
     unicode_char comment[3] = {0,0,0};
     unicode_char comment_end[10] = {0,0,0,0,0,0,0,0,0,0};
     unicode_char cdata_end[6] = {0,0,0,0,0,0};
@@ -249,15 +250,17 @@ int main() {
     if (!is_question_mark_char(QUESTION_MARK)) {
       HANDLE_ERROR("Couldn't identify question mark", 0);
     }
-    cdata[0] = (unicode_char) 0x43;
-    cdata[1] = (unicode_char) 0x44;
-    cdata[2] = (unicode_char) 0x41;
-    cdata[3] = (unicode_char) 0x54;
-    cdata[4] = (unicode_char) 0x41;
-    cdata[5] = (unicode_char) 0x5b;
-    cdata[6] = UNICODE_NULL;
+    cdata[0] = (unicode_char) 0x5b;
+    cdata[1] = (unicode_char) 0x43;
+    cdata[2] = (unicode_char) 0x44;
+    cdata[3] = (unicode_char) 0x41;
+    cdata[4] = (unicode_char) 0x54;
+    cdata[5] = (unicode_char) 0x41;
+    cdata[6] = (unicode_char) 0x5b;
+    cdata[7] = UNICODE_NULL;
     if (!is_cdata_start(cdata, 0)) {
-      HANDLE_ERROR("Couldn't identify CDATA[", 0);
+      print_unicode(cdata);
+      HANDLE_ERROR("Couldn't identify [CDATA[", 0);
     }
     comment[0] = (unicode_char) 0x2d;
     comment[1] = (unicode_char) 0x2d;

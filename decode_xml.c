@@ -129,11 +129,12 @@ static small_int is_slash(CONST unicode_char character) {
 static small_int is_cdata_start(CONST unicode_char* buffer,
 				unicode_char_length offset) {
   return read_unicode_character(buffer, offset+0) == 0x5b &&
-    read_unicode_character(buffer, offset+1) == 0x44 &&
-    read_unicode_character(buffer, offset+2) == 0x41 &&
-    read_unicode_character(buffer, offset+3) == 0x54 &&
-    read_unicode_character(buffer, offset+4) == 0x41 &&
-    read_unicode_character(buffer, offset+5) == 0x5b;
+    read_unicode_character(buffer, offset+1) == 0x43 &&
+    read_unicode_character(buffer, offset+2) == 0x44 &&
+    read_unicode_character(buffer, offset+3) == 0x41 &&
+    read_unicode_character(buffer, offset+4) == 0x54 &&
+    read_unicode_character(buffer, offset+5) == 0x41 &&
+    read_unicode_character(buffer, offset+6) == 0x5b;
 }
 
 static unicode_char_length find_cdata_end(CONST unicode_char* buffer,
