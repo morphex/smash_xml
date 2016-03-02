@@ -196,12 +196,15 @@ struct parser {
 #ifdef DEBUG
 #ifndef DEBUG_PRINT
 #define DEBUG_PRINT(message, ...) printf(message, __VA_ARGS__)
+#define DEBUG_PRINT_NA(message) printf(message)
 #endif
 #else
 #define DEBUG_PRINT(message, ...) ((void)0)
+#define DEBUG_PRINT_NA(message) ((void)0)
 #endif
 
 /* Convenience macro to replace printf with something that can
    output with the correct character type for the terminal.
 */
 #define PRINT(...) printf(__VA_ARGS__)
+#define PRINT_NA(message) printf(message)

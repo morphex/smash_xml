@@ -1,6 +1,6 @@
 CC = gcc
 COMPILER_OPTIONS = -std=iso9899:1990 -pedantic -fms-extensions decode_xml.c -g -o decode_xml -I. -Wall -Wuninitialized -Wfatal-errors
-COMPILER_OPTIONS_ASSEMBLER = -std=iso9899:1990 -pedantic -fms-extensions decode_xml.c -g -S -Wa,-ahl=test.s -I. -Wall -Wuninitialized -fverbose-asm
+COMPILER_OPTIONS_ASSEMBLER = -std=iso9899:1990 -pedantic -fms-extensions decode_xml.c -g -S -Wa,-ahl=test.s -I. -Wfatal-errors -Wall -Wuninitialized -fverbose-asm
 #CC = tcc
 #COMPILER_OPTIONS = -o decode_xml -I. decode_xml.c
 

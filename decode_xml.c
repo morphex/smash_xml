@@ -300,14 +300,14 @@ void print_unicode(CONST unicode_char* buffer) {
   }
   fflush(NULL); /* FIXME, remove, for gdb print */
 #ifdef DEBUG
-  DEBUG_PRINT("  ", NULL);
+  DEBUG_PRINT_NA("  ");
   index = 0;
   while (buffer[index] != UNICODE_NULL) {
-    DEBUG_PRINT("%ld,", (unsigned long) buffer[index]);
+    DEBUG_PRINT("%lu,", (unsigned long) buffer[index]);
     index++;
   }
   DEBUG_PRINT("\nindex %i\n", index);
-  DEBUG_PRINT("\nend print_unicode\n", 0);
+  DEBUG_PRINT_NA("\nend print_unicode\n");
 #endif
 }
 
@@ -514,7 +514,7 @@ small_int compare_unicode_string(CONST unicode_char* buffer,
     DEBUG_PRINT("Compare loop %c\n", (char) compare_to[index]);
     if (compare_to[index] == UNICODE_NULL) {
       /* Found terminating character, success */
-      DEBUG_PRINT("Found terminating character\n", 0);
+      DEBUG_PRINT_NA("Found terminating character\n");
       return 0;
     }
     buffer_character = read_unicode_character(buffer, offset+index);
@@ -542,7 +542,7 @@ static source_buffer_index run_attribute_value(CONST unicode_char* buffer,
 					       CONST unicode_char end_quote) {
   int index = 0;
   unicode_char character = UNICODE_NULL;
-  DEBUG_PRINT("In run_attribute_value\n", 0);
+  DEBUG_PRINT_NA("In run_attribute_value\n");
   DEBUG_PRINT("Quote: %c\n", (char) end_quote);
   do {
     character = read_unicode_character(buffer, offset+index);
@@ -685,7 +685,7 @@ small_int validate_unicode_xml_1(CONST unicode_char* buffer,
 
 static small_int is_name_start_character_char(CONST unicode_char character) {
   if (character == 0x003A || character == 0x005F) {
-    DEBUG_PRINT("name_start_character 1\n", 0);
+    DEBUG_PRINT_NA("name_start_character 1\n");
     return 1;
   }
   if ((character >= 0x0061 && character <= 0x007A) || /* [a-z] */
@@ -724,17 +724,17 @@ static small_int is_name_character(CONST unicode_char* buffer,
 			    CONST source_buffer_index offset) {
   unicode_char character = read_unicode_character(buffer, offset);
   if (is_name_start_character(buffer, offset)) {
-    DEBUG_PRINT("name start 1\n", 0);
+    DEBUG_PRINT_NA("name start 1\n");
     return 1;
   }
   if(character == 0x002D || character == 0x002E || character == 0x00B7) {
-    DEBUG_PRINT("name start 2\n", 0);
+    DEBUG_PRINT_NA("name start 2\n");
     return 1;
   }
   if ((character >= 0x0030 && character <= 0x0039) || /* [0-9] */
       (character >= 0x0300 && character <= 0x036F) || /* [#x300-#x36F] */
       (character >= 0x203F && character <= 0x2040)) { /* [#x203F-#x2040] */
-    DEBUG_PRINT("name start 3\n", 0);
+    DEBUG_PRINT_NA("name start 3\n");
     return 1;
   }
   return 0;
@@ -835,7 +835,7 @@ static small_buffer_index run_attribute_name(CONST unicode_char* buffer,
     Could've skipped the first character but adding
     it via the loop to keep the code simple.
   */
-  DEBUG_PRINT("In run_attribute_name..\n", 0);
+  DEBUG_PRINT_NA("In run_attribute_name..\n");
   do {
     if (index > MAXIMUM_NAME_SIZE) {
       /* Attribute name is too long */
@@ -852,11 +852,11 @@ static small_buffer_index run_attribute_name(CONST unicode_char* buffer,
 		  index, attribute_storage[index]);
     } else if (!is_equal_character(buffer, position+index)) {
       /* Invalid character found */
-      DEBUG_PRINT("Invalid character found..\n", 0);
+      DEBUG_PRINT_NA("Invalid character found..\n");
       free(attribute_storage); attribute_storage = NULL;
       return 0;
     } else {
-      DEBUG_PRINT("Success, reallocating memory..\n", 0);
+      DEBUG_PRINT_NA("Success, reallocating memory..\n");
       attribute_storage[index+1] = UNICODE_NULL;
       attribute_storage = realloc(attribute_storage,
 				  (sizeof(unicode_char)*(index+1)));
@@ -892,7 +892,7 @@ static small_buffer_index run_element_name (CONST unicode_char* buffer,
   if (element_name_storage == 0) {
     return 0;
   }
-  DEBUG_PRINT("In run_element_name..\n", 0);
+  DEBUG_PRINT_NA("In run_element_name..\n");
   do {
     if (index > MAXIMUM_NAME_SIZE) {
       /* Element name is too long */
@@ -908,14 +908,14 @@ static small_buffer_index run_element_name (CONST unicode_char* buffer,
 		  (char)character, element_name_storage[index]);
     } else if ((!is_whitespace(buffer, position+index) && (position+index) < end) && character != SLASH) {
       /* Invalid character found */
-      DEBUG_PRINT("Invalid character found..\n", 0);
+      DEBUG_PRINT_NA("Invalid character found..\n");
       free(element_name_storage); element_name_storage = NULL;
       return 0;
     } else if (character == SLASH) {
       /* Terminating slash, can only be followed by > FIXME - check */
       index++;
     } else {
-      DEBUG_PRINT("Success, reallocating memory..\n", 0);
+      DEBUG_PRINT_NA("Success, reallocating memory..\n");
       element_name_storage[index+1] = UNICODE_NULL;
       element_name_storage = realloc(element_name_storage,
 				  (sizeof(unicode_char)*(index+1)));
@@ -1035,7 +1035,7 @@ static unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
   }
   DEBUG_PRINT(element_name, 0);
   element->element.name = element_name;
-  DEBUG_PRINT("In parse_element_start_tag..\n", 0);
+  DEBUG_PRINT_NA("In parse_element_start_tag..\n");
 #ifdef DEBUG
   print_unicode(element->element.name);
 #endif
@@ -1064,9 +1064,9 @@ static unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
 						attribute_value_length,
 						&new->attribute.content);
 #ifdef DEBUG
-	  DEBUG_PRINT("Sliced: ", NULL);
+	  DEBUG_PRINT_NA("Sliced: ");
 	  print_unicode(new->attribute.content);
-	  DEBUG_PRINT("\n", NULL);
+	  DEBUG_PRINT_NA("\n");
 #endif
 	  DEBUG_PRINT("Worked with attribute, %ld, %i\n", offset,
 		 attribute_value_length);
@@ -1187,7 +1187,7 @@ void print_tree(struct xml_item* start, int level, int count) {
     }
     PRINT("\n%s>", indentation);
     if (start->element.child != NULL) {
-      DEBUG_PRINT("start->child != NULL", 0);
+      DEBUG_PRINT_NA("start->child != NULL");
       print_tree(start->element.child, level+1, count+1);
     }
     if (start->next != NULL) {
@@ -1303,11 +1303,11 @@ struct xml_item* parse_file(FILE *file) {
 	unicode_char* element_name = NULL;
 	struct xml_item *tag = NULL;
 	run_element_name(buffer, index+2, end, &element_name);
-	DEBUG_PRINT("Element name: ", 0);
+	DEBUG_PRINT_NA("Element name: ");
 #ifdef DEBUG
 	print_unicode(element_name);
 #endif
-	DEBUG_PRINT("\n", 0);
+	DEBUG_PRINT_NA("\n");
 	tag = element_stack->element;
 	if (tag->type == 3 &&
 	    !compare_unicode_strings(tag->element.name, element_name)) {
@@ -1317,7 +1317,7 @@ struct xml_item* parse_file(FILE *file) {
 	  } else if (closed_tag->parent) {
 	    current = closed_tag->parent;
 	  } /* FIXME, at topmost element? */
-	  DEBUG_PRINT("Found end tag\n", 0);
+	  DEBUG_PRINT_NA("Found end tag\n");
 	  if (element_stack->previous) {
 	    element_stack = pop_xml_stack(element_stack);
 	  }
@@ -1328,7 +1328,7 @@ struct xml_item* parse_file(FILE *file) {
 	  /* Found an end tag without a start tag */
 	  FAIL("End tag without start tag found at %ld", index);
 	}
-	DEBUG_PRINT("\nEnd of element section\n", 0);
+	DEBUG_PRINT_NA("\nEnd of element section\n");
 	index = end+1;
 	continue;
 	DEBUG_PRINT("End of element endtag: %ld\n", index);
@@ -1375,13 +1375,13 @@ struct xml_item* parse_file(FILE *file) {
 	index = element_end+1;
 	DEBUG_PRINT("\nYay, regular, %ld", index);
       } else if (is_exclamation_mark_char(look_ahead)) {
-	DEBUG_PRINT("\nExclamation mark!", 0);
+	DEBUG_PRINT_NA("\nExclamation mark!");
 	if (is_cdata_start(buffer, index+2)) {
 	  unicode_char *cdata_data = NULL;
 	  struct xml_item *new = NULL;
 	  struct xml_item *cdata = NULL;
 	  unicode_char_length end = 0;
-	  PRINT("\nIs CDATA", 0);
+	  PRINT_NA("\nIs CDATA");
 	  new = create_xml_element();
 	  cdata = create_xml_text();
 	  end = find_cdata_end(buffer, index+6);
@@ -1404,7 +1404,7 @@ struct xml_item* parse_file(FILE *file) {
 	  unicode_char_length end = 0;
 	  new = create_xml_element();
 	  comment = create_xml_text();
-	  PRINT("\nIs comment", 0);
+	  PRINT_NA("\nIs comment");
 	  end = find_comment_end(buffer, index+2);
 	  slice_string(buffer, index+2, end-2, &comment_data);
 	  new->element.name = convert_char_array_to_unicode_char_array("!--");
@@ -1422,11 +1422,11 @@ struct xml_item* parse_file(FILE *file) {
 	  FAIL("Invalid XML, exclamation mark, %ld\n", index);
 	}
       } else if (is_question_mark_char(look_ahead)) {
-	DEBUG_PRINT("\nIs question mark",0);
+	DEBUG_PRINT_NA("\nIs question mark");
 	index = find_processing_instruction_end(buffer, index+2)+1;
 	DEBUG_PRINT("\nProcessing instruction ended at %ld\n", index);
       } else {
-	DEBUG_PRINT("The end\n", 0);
+	DEBUG_PRINT_NA("The end\n");
 	FAIL("\nError, could not handle character %ux at %ux",
 	       look_ahead, index);
       }
