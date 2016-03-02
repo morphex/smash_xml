@@ -102,10 +102,10 @@ int main() {
   /* Equal sign test */
   if (test_miscellaneous) {
     unicode_char* attribute_value = NULL;
+    unicode_char equal_sign = read_unicode_character(buffer, offset+28);
 #ifdef DEBUG
     PRINT("test_miscellaneous\n");
 #endif
-    unicode_char equal_sign = read_unicode_character(buffer, offset+28);
     if (equal_sign != EQUAL_CHARACTER) {
       HANDLE_ERROR("Expected equal sign at position 28, got %ld", equal_sign);
     }
@@ -180,14 +180,15 @@ int main() {
   }
   /* Search test */
   if (test_search) {
+    source_buffer_index search_result;
+    unicode_char compare_to3[4] = {0x2d,0x2d,0x3e,UNICODE_NULL};
+    search_result =  run_unicode_string(buffer, 0, compare_to3);
+    /* print_unicode(compare_to3); */
+    
 #ifdef DEBUG
     PRINT("test_search\n");
 #endif
-    unicode_char compare_to3[] = {0x2d,0x2d,0x3e,UNICODE_NULL};
-    /* print_unicode(compare_to3); */
-    source_buffer_index search_result = run_unicode_string(buffer,
-							   0,
-							   compare_to3);
+
     if (search_result != 287) {
       HANDLE_ERROR("Expected to find result at position %ld, got %ld",
 		   287, search_result);
