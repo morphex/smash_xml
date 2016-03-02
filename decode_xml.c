@@ -300,7 +300,7 @@ void print_unicode(CONST unicode_char* buffer) {
   }
   fflush(NULL); /* FIXME, remove, for gdb print */
 #ifdef DEBUG
-  DEBUG_PRINT("  ");
+  DEBUG_PRINT("  ", NULL);
   index = 0;
   while (buffer[index] != UNICODE_NULL) {
     DEBUG_PRINT("%ld,", (unsigned long) buffer[index]);
@@ -1064,9 +1064,9 @@ static unicode_char_length parse_element_start_tag(CONST unicode_char* buffer,
 						attribute_value_length,
 						&new->attribute.content);
 #ifdef DEBUG
-	  DEBUG_PRINT("Sliced: ");
+	  DEBUG_PRINT("Sliced: ", NULL);
 	  print_unicode(new->attribute.content);
-	  DEBUG_PRINT("\n");
+	  DEBUG_PRINT("\n", NULL);
 #endif
 	  DEBUG_PRINT("Worked with attribute, %ld, %i\n", offset,
 		 attribute_value_length);
@@ -1377,11 +1377,11 @@ struct xml_item* parse_file(FILE *file) {
       } else if (is_exclamation_mark_char(look_ahead)) {
 	DEBUG_PRINT("\nExclamation mark!", 0);
 	if (is_cdata_start(buffer, index+2)) {
-	  PRINT("\nIs CDATA", 0);
 	  unicode_char *cdata_data = NULL;
 	  struct xml_item *new = NULL;
 	  struct xml_item *cdata = NULL;
 	  unicode_char_length end = 0;
+	  PRINT("\nIs CDATA", 0);
 	  new = create_xml_element();
 	  cdata = create_xml_text();
 	  end = find_cdata_end(buffer, index+6);
@@ -1431,6 +1431,8 @@ struct xml_item* parse_file(FILE *file) {
 	       look_ahead, index);
       }
     } else {
+      unicode_char *characters = NULL;
+      unicode_char_length end = 0;
       /*
       index++;
       continue;
@@ -1450,8 +1452,8 @@ struct xml_item* parse_file(FILE *file) {
 	index++;
 	continue;
       }
-      unicode_char *characters = NULL;
-      unicode_char_length end = find_element_starttag(buffer, index);
+      
+      end = find_element_starttag(buffer, index);
       DEBUG_PRINT("Finding end %u: ", end);
       DEBUG_PRINT("previous->parent->parent %u\n",
 		  (unsigned long) previous->parent->parent);

@@ -198,10 +198,10 @@ int main() {
   if (test_slice_and_length) {
     unicode_char *attribute = NULL;
     unicode_char_length end = 0;
+    source_buffer_index length = get_length_unicode(buffer);
 #ifdef DEBUG
     PRINT("test_slice_and_length\n");
 #endif
-    source_buffer_index length = get_length_unicode(buffer);
     if (length != 873) {
       HANDLE_ERROR("Expected length of 873, got %lu\n", length);
     }
@@ -220,11 +220,12 @@ int main() {
 
   }
   if (test_parse_file) {
+    FILE* file = NULL; 
+    struct xml_item *result = parse_file(file);
+    file = fopen("test.xml", "rb+");
 #ifdef DEBUG
     PRINT("test_parse_file\n");
 #endif
-    FILE* file = fopen("test.xml", "rb+");
-    struct xml_item *result = parse_file(file);
     fflush(NULL);
     print_tree_header(result, 0, 1);
     PRINT("\n");
