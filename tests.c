@@ -26,7 +26,7 @@ int main() {
   test_basics = rat; test_attribute = rat;
   test_miscellaneous = 1; test_compare = rat; test_search = rat;
   test_slice_and_length = rat;
-  test_parse_file = 0;
+  test_parse_file = 1;
   test_printer = rat;
   buffer = NULL;
   read = 0;
@@ -221,8 +221,9 @@ int main() {
   }
   if (test_parse_file) {
     FILE* file = NULL; 
-    struct xml_item *result = parse_file(file);
+    struct xml_item *result = NULL;
     file = fopen("test.xml", "rb+");
+    result = parse_file(file);
 #ifdef DEBUG
     PRINT("test_parse_file\n");
 #endif
